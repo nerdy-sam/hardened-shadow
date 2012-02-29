@@ -1,0 +1,9 @@
+{
+  global:
+    _nss_hardened_shadow_endspent;
+    _nss_hardened_shadow_getspent_r;
+    _nss_hardened_shadow_getspnam_r;
+    _nss_hardened_shadow_setspent;
+  local:
+    *;
+};
