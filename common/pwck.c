@@ -65,7 +65,7 @@ bool hardened_shadow_pwck_passwd(bool read_only, bool quiet) {
         warnx("invalid user name '%s'", pwd.pw_name);
       }
 
-      if (pwd.pw_uid > hardened_shadow_uid_max()) {
+      if (pwd.pw_uid > UID_MAX) {
         result = false;
         warnx("invalid user ID '%ju'", (uintmax_t)pwd.pw_uid);
       }
@@ -159,7 +159,7 @@ bool hardened_shadow_grpck(bool read_only) {
         warnx("invalid group name '%s'", gr->gr_name);
       }
 
-      if (gr->gr_gid > hardened_shadow_gid_max()) {
+      if (gr->gr_gid > GID_MAX) {
         result = false;
         warnx("invalid group ID '%ju'", (uintmax_t)gr->gr_gid);
       }

@@ -164,7 +164,7 @@ static void parse_args(int argc, char **argv) {
         flag_shell = optarg;
         break;
       case 'u':
-        if (!hardened_shadow_strtonum(optarg, 0, hardened_shadow_uid_max(), &flag_uid))
+        if (!hardened_shadow_strtonum(optarg, 0, UID_MAX, &flag_uid))
           errx(EXIT_FAILURE, "invalid user ID '%s'", optarg);
         break;
       case 'U':

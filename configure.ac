@@ -25,7 +25,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-AC_PREREQ([2.68])
+AC_PREREQ([2.67])
 AC_INIT([hardened-shadow],
 	[0.9],
 	[http://code.google.com/p/hardened-shadow/issues],
@@ -63,7 +63,6 @@ AC_CONFIG_FILES([Makefile])
 AC_DEFINE([UNUSED], [__attribute__((unused))], [Shortcut and possible compatibility shim for "unused" attribute.])
 
 # Checks for programs.
-AC_PROG_CXX
 AC_PROG_AWK
 AC_PROG_CC
 AC_PROG_CC_C99

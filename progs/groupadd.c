@@ -83,7 +83,7 @@ static void parse_args(int argc, char **argv) {
         break;
       case 'g': {
         intmax_t arg;
-        if (!hardened_shadow_strtonum(optarg, 0, hardened_shadow_gid_max(), &arg))
+        if (!hardened_shadow_strtonum(optarg, 0, GID_MAX, &arg))
           errx(EXIT_FAILURE, "invalid group ID '%s'", optarg);
         flag_gid = arg;
         break;

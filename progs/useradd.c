@@ -216,7 +216,7 @@ static void parse_args(int argc, char **argv) {
         flag_shell = optarg;
         break;
       case 'u':
-        if (!hardened_shadow_strtonum(optarg, 0, hardened_shadow_uid_max(), &flag_uid))
+        if (!hardened_shadow_strtonum(optarg, 0, UID_MAX, &flag_uid))
           errx(EXIT_FAILURE, "invalid user ID '%s'", optarg);
         break;
       case 'U':
@@ -641,7 +641,7 @@ static void initialize_lastlog(void) {
     err(EXIT_FAILURE, "open");
   }
 
-  if (!hardened_shadow_umul_ok(sizeof(lastlog_entry), user_uid, hardened_shadow_off_max()))
+  if (!hardened_shadow_umul_ok(sizeof(lastlog_entry), user_uid, OFF_MAX))
     errx(EXIT_FAILURE, "integer overflow detected");
   off_t offset = sizeof(lastlog_entry) * user_uid;
 

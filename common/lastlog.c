@@ -79,7 +79,7 @@ bool hardened_shadow_lastlog_read(struct hardened_shadow_lastlog_handle **handle
   size_t offset_max = (*handle)->stat.st_size - sizeof(*entry);
 
   if (offset <= offset_max) {
-    if (!hardened_shadow_scast_ok(offset, hardened_shadow_off_max()))
+    if (!hardened_shadow_scast_ok(offset, OFF_MAX))
       return false;
     if (fseeko((*handle)->file, (off_t)offset, SEEK_SET) != 0)
       return false;

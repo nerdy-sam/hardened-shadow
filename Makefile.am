@@ -49,7 +49,6 @@ libcommon_la_SOURCES = \
 	common/hardened-shadow.h \
 	common/file.c \
 	common/lastlog.c \
-	common/limits.cc \
 	common/misc.c \
 	common/parse.c \
 	common/print.c \

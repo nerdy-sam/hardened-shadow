@@ -198,7 +198,7 @@ bool hardened_shadow_string_to_gid(const char *str, gid_t *result) {
   }
 
   intmax_t num = -1;
-  if (!hardened_shadow_strtonum(str, 0, hardened_shadow_gid_max(), &num))
+  if (!hardened_shadow_strtonum(str, 0, GID_MAX, &num))
     return false;
 
   *result = num;

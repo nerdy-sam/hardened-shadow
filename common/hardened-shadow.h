@@ -32,14 +32,11 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct group;
 struct lastlog;
@@ -57,6 +54,21 @@ struct hardened_shadow_file_state {
   ((sizeof(a) / sizeof(*(a))) /                 \
    (size_t)(!(sizeof(a) % sizeof(*(a)))))
 
+/* We are not sure what types gid_t, uid_t, off_t really are,
+ * so use a very conservative guess. */
+
+#ifndef GID_MAX
+#define GID_MAX INT_MAX
+#endif
+
+#ifndef UID_MAX
+#define UID_MAX INT_MAX
+#endif
+
+#ifndef OFF_MAX
+#define OFF_MAX INT_MAX
+#endif
+
 static inline uintmax_t uintmin(uintmax_t a, uintmax_t b) {
   return (a < b) ? a : b;
 }
@@ -71,10 +83,6 @@ bool hardened_shadow_config_get_range(const char *key, intmax_t *minresult, intm
 void hardened_shadow_openlog(const char *ident);
 void hardened_shadow_syslog(int priority, const char *format, ...) __attribute__((__format__(__printf__, 2, 3)));
 void hardened_shadow_closelog(void);
-
-uintmax_t hardened_shadow_gid_max(void);
-uintmax_t hardened_shadow_uid_max(void);
-intmax_t hardened_shadow_off_max(void);
 
 bool hardened_shadow_ucast_ok(intmax_t a, uintmax_t max);
 bool hardened_shadow_scast_ok(uintmax_t a, intmax_t max);
@@ -179,9 +187,5 @@ bool hardened_shadow_copy_dir_contents(const char *source, const char *destinati
 
 bool hardened_shadow_pwck_passwd(bool read_only, bool quiet);
 bool hardened_shadow_grpck(bool read_only);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* HARDENED_SHADOW_H */
