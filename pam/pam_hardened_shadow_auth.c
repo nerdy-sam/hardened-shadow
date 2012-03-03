@@ -2,7 +2,7 @@
  * Copyright Alexander O. Yuriev, 1996.  All rights reserved.
  * NIS+ support by Thorsten Kukuk <kukuk@weber.uni-paderborn.de>
  * Copyright Jan Rękorajski, 1999.  All rights reserved.
- * Copyright (c) Paweł Hajdan, Jr. 2012
+ * Copyright (c) 2012, Paweł Hajdan, Jr.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

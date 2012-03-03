@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Paweł Hajdan, Jr. 2012
+ * Copyright (c) 2012, Paweł Hajdan, Jr.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

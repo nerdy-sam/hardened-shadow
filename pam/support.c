@@ -4,7 +4,7 @@
  * Copyright (c) Alex O. Yuriev, 1996.
  * Copyright (c) Cristian Gafton 1996.
  * Copyright (c) Red Hat, Inc. 1996, 2007, 2008.
- * Copyright (c) Paweł Hajdan, Jr. 2012
+ * Copyright (c) 2012, Paweł Hajdan, Jr.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions

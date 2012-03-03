@@ -3,7 +3,7 @@
  * Copyright (C) 1996.
  * Copyright (c) Jan Rękorajski, 1999.
  * Copyright (c) Red Hat, Inc., 2007, 2008.
- * Copyright (c) Paweł Hajdan, Jr. 2012
+ * Copyright (c) 2012, Paweł Hajdan, Jr.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
