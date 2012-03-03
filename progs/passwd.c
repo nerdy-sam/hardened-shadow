@@ -251,6 +251,9 @@ static bool update_expiry(void) {
     return false;
   }
 
+  // TODO(phajdan.jr): Take flag_lock, flag_unlock into account.
+  // Relevant code how to handle them can be found in usermod.c.
+
   if (flag_maxdays != FLAG_NOT_SET)
     spwd->sp_max = flag_maxdays;
   if (flag_mindays != FLAG_NOT_SET)

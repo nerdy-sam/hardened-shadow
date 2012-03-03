@@ -2,8 +2,9 @@
 <!--
    Copyright (c) 1993       , The Regents of the University of California
    Copyright (c) 2006 - 2008, Nicolas François
+   Copyright (c) 2012, Paweł Hajdan, Jr.
    All rights reserved.
-  
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
@@ -15,7 +16,7 @@
    3. The name of the copyright holders or contributors may not be used to
       endorse or promote products derived from this software without
       specific prior written permission.
-  
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -28,8 +29,9 @@
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.5//EN"
+  "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <refentry id='nologin.8'>
-  <!-- $Id: nologin.8.xml 2486 2009-01-27 18:17:54Z nekral-guest $ -->
   <refmeta>
     <refentrytitle>nologin</refentrytitle>
     <manvolnum>8</manvolnum>
@@ -39,7 +41,7 @@
     <refname>nologin</refname>
     <refpurpose>politely refuse a login</refpurpose>
   </refnamediv>
-  <!-- body begins here -->
+
   <refsynopsisdiv id='synopsis'>
     <cmdsynopsis>
       <command>nologin</command>

@@ -2,8 +2,9 @@
 <!--
    Copyright (c) 1990       , Julianne Frances Haugh
    Copyright (c) 2007 - 2008, Nicolas François
+   Copyright (c) 2012, Paweł Hajdan, Jr.
    All rights reserved.
-  
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
@@ -15,7 +16,7 @@
    3. The name of the copyright holders or contributors may not be used to
       endorse or promote products derived from this software without
       specific prior written permission.
-  
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -30,9 +31,7 @@
 -->
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.5//EN"
   "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-
 <refentry id='chsh.1'>
-  <!-- $Id: chsh.1.xml 2435 2008-10-11 11:44:43Z nekral-guest $ -->
   <refmeta>
     <refentrytitle>chsh</refentrytitle>
     <manvolnum>1</manvolnum>
@@ -64,6 +63,17 @@
       superuser may change the login shell for any account.
     </para>
 
+    <para>
+      Every user has his own shell file, containing the path to that user's
+      preferred shell. To use that file, <filename>/etc/passwd</filename> entry
+      for that user should list <filename>/bin/shell_proxy</filename> as the shell.
+    </para>
+
+    <para>
+      By default the per-user shell file is changed. To change the
+      <filename>/etc/passwd</filename> entry you need to pass the
+      <option>-p</option> option.
+    </para>
   </refsect1>
 
   <refsect1 id='options'>
@@ -80,9 +90,19 @@
       </varlistentry>
       <varlistentry>
 	<term>
+	  <option>-p</option>
+	</term>
+        <listitem>
+	  <para>
+	    Update /etc/passwd instead of the user's shell file.
+	  </para>
+	</listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>
 	  <option>-s</option>, <option>--shell</option> <replaceable>SHELL</replaceable>
 	</term>
-        <listitem>                                                                                                                   
+        <listitem>
 	  <para>
 	    The name of the user's new login shell. Setting this field to
 	    blank causes the system to select the default login shell.
@@ -110,45 +130,6 @@
       <filename>/etc/shells</filename> is discouraged since accidentally
       changing to a restricted shell would prevent the user from ever
       changing her login shell back to its original value.
-    </para>
-  </refsect1>
-
-  <refsect1 id='files'>
-    <title>FILES</title>
-    <variablelist>
-      <varlistentry>
-	<term><filename>/etc/passwd</filename></term>
-	<listitem>
-	  <para>User account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term><filename>/etc/shells</filename></term>
-	<listitem>
-	  <para>List of valid login shells.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term><filename>/etc/login.defs</filename></term>
-	<listitem>
-	  <para>Shadow password suite configuration.</para>
-	</listitem>
-      </varlistentry>
-    </variablelist>
-  </refsect1>
-
-  <refsect1 id='see_also'>
-    <title>SEE ALSO</title>
-    <para>
-      <citerefentry>
-	<refentrytitle>chfn</refentrytitle><manvolnum>1</manvolnum>
-      </citerefentry>,
-      <citerefentry>
-	<refentrytitle>login.defs</refentrytitle><manvolnum>5</manvolnum>
-      </citerefentry>,
-      <citerefentry>
-	<refentrytitle>passwd</refentrytitle><manvolnum>5</manvolnum>
-      </citerefentry>.
     </para>
   </refsect1>
 </refentry>

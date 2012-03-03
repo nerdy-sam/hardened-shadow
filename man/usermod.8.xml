@@ -2,8 +2,9 @@
 <!--
    Copyright (c) 1991 - 1994, Julianne Frances Haugh
    Copyright (c) 2007 - 2009, Nicolas François
+   Copyright (c) 2012, Paweł Hajdan, Jr.
    All rights reserved.
-  
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
@@ -15,7 +16,7 @@
    3. The name of the copyright holders or contributors may not be used to
       endorse or promote products derived from this software without
       specific prior written permission.
-  
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -31,7 +32,6 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.5//EN"
   "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <refentry id='usermod.8'>
-  <!--  $Id: usermod.8.xml 2964 2009-05-21 12:02:12Z nekral-guest $  -->
   <refmeta>
     <refentrytitle>usermod</refentrytitle>
     <manvolnum>8</manvolnum>
@@ -85,10 +85,7 @@
 	</term>
 	<listitem>
 	  <para>
-	    The new value of the user's password file comment field. It is
-	    normally modified using the <citerefentry>
-	    <refentrytitle>chfn</refentrytitle><manvolnum>1</manvolnum>
-	    </citerefentry> utility.
+	    The new value of the user's password file comment field.
 	  </para>
 	</listitem>
       </varlistentry>
@@ -233,34 +230,6 @@
       </varlistentry>
       <varlistentry>
 	<term>
-	  <option>-p</option>, <option>--password</option>
-	  <replaceable>PASSWORD</replaceable>
-	</term>
-	<listitem>
-	  <para>
-	    The encrypted password, as returned by <citerefentry>
-	    <refentrytitle>crypt</refentrytitle><manvolnum>3</manvolnum>
-	    </citerefentry>.
-	  </para>
-	  <para>
-	    <emphasis role="bold">Note:</emphasis> This option is not
-	    recommended because the password (or encrypted password) will
-	    be visible by users listing the processes.
-	  </para>
-	  <para condition="pam">
-	    The password will be written in the local
-	    <filename>/etc/passwd</filename> or
-	    <filename>/etc/shadow</filename> file. This might differ from the
-	    password database configured in your PAM configuration.
-	  </para>
-	  <para>
-	    You should make sure the password respects the system's
-	    password policy.
-	  </para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term>
 	  <option>-s</option>, <option>--shell</option>
 	  <replaceable>SHELL</replaceable>
 	</term>
@@ -283,8 +252,7 @@
 	  <para>
 	    This value must be unique,
 	    unless the <option>-o</option> option is used. The value must be
-	    non-negative. Values between 0 and 999 are typically reserved
-	    for system accounts.
+	    non-negative.
 	  </para>
 	  <para>
 	    The user's mailbox, and any files which the user owns and which are
@@ -317,32 +285,11 @@
 	  </para>
 	</listitem>
       </varlistentry>
-	<varlistentry>
-	  <term>
-	    <option>-Z</option>, <option>--selinux-user</option>
-	    <replaceable>SEUSER</replaceable>
-	  </term>
-	  <listitem>
-	    <para>
-	      The SELinux user for the user's login. The default is to leave
-	      this field the blank, which causes the system to select the
-	      default SELinux user.
-	    </para>
-	  </listitem>
-	</varlistentry>
     </variablelist>
   </refsect1>
 
   <refsect1 id='caveats'>
     <title>CAVEATS</title>
-    <para>
-      You must make certain that the named user is
-      not executing any processes when this command is being executed if the
-      user's numerical user ID, the user's name, or the user's home
-      directory is being changed. <command>usermod</command> checks this
-      on Linux, but only check if the user is logged in according to utmp
-      on other architectures.
-    </para>
     <para>
       You must change the owner of any <command>crontab</command> files or
       <command>at</command> jobs manually.
@@ -352,42 +299,9 @@
     </para>
   </refsect1>
 
-  <refsect1 id='files'>
-    <title>FILES</title>
-    <variablelist>
-      <varlistentry>
-	<term><filename>/etc/group</filename></term>
-	<listitem>
-	  <para>Group account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry condition="gshadow">
-	<term><filename>/etc/gshadow</filename></term>
-	<listitem>
-	  <para>Secure group account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term><filename>/etc/passwd</filename></term>
-	<listitem>
-	  <para>User account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term><filename>/etc/shadow</filename></term>
-	<listitem>
-	  <para>Secure user account information.</para>
-	</listitem>
-      </varlistentry>
-    </variablelist>
-  </refsect1>
-
   <refsect1 id='see_also'>
     <title>SEE ALSO</title>
     <para>
-      <citerefentry>
-	<refentrytitle>chfn</refentrytitle><manvolnum>1</manvolnum>
-      </citerefentry>,
       <citerefentry>
 	<refentrytitle>chsh</refentrytitle><manvolnum>1</manvolnum>
       </citerefentry>,
@@ -398,9 +312,6 @@
 	<refentrytitle>crypt</refentrytitle><manvolnum>3</manvolnum>
       </citerefentry>,
       <citerefentry>
-	<refentrytitle>gpasswd</refentrytitle><manvolnum>8</manvolnum>
-      </citerefentry>,
-      <citerefentry>
 	<refentrytitle>groupadd</refentrytitle><manvolnum>8</manvolnum>
       </citerefentry>,
       <citerefentry>
@@ -408,9 +319,6 @@
       </citerefentry>,
       <citerefentry>
 	<refentrytitle>groupmod</refentrytitle><manvolnum>8</manvolnum>
-      </citerefentry>,
-      <citerefentry>
-	<refentrytitle>login.defs</refentrytitle><manvolnum>5</manvolnum>
       </citerefentry>,
       <citerefentry>
 	<refentrytitle>useradd</refentrytitle><manvolnum>8</manvolnum>

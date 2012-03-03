@@ -139,6 +139,7 @@ dist_pamd_DATA = \
 man_XMANS = \
 	man/chage.1.xml \
 	man/chsh.1.xml \
+	man/grpck.8.xml \
 	man/groupadd.8.xml \
 	man/groupdel.8.xml \
 	man/groupmod.8.xml \
@@ -155,10 +156,10 @@ man_XMANS = \
 	man/usermod.8.xml \
 	man/vipw.8.xml
 
-#man_MANS = $(subst .xml,,$(man_XMANS))
 man_MANS = \
 	man/chage.1 \
 	man/chsh.1 \
+	man/grpck.8 \
 	man/groupadd.8 \
 	man/groupdel.8 \
 	man/groupmod.8 \
@@ -169,6 +170,7 @@ man_MANS = \
 	man/passwd.1 \
 	man/pwck.8 \
 	man/pwconv.8 \
+	man/pwunconv.8 \
 	man/su.1 \
 	man/useradd.8 \
 	man/userdel.8 \
@@ -178,7 +180,7 @@ man_MANS = \
 EXTRA_DIST = $(man_MANS) $(man_XMANS)
 
 if GENERATE_MAN
-CLEANFILES = man/*.{1,2,3,4,5,6,7,8}
+CLEANFILES = $(man_MANS)
 
 % : %.xml
 	$(XSLTPROC) -o $@ --nonet http://docbook.sourceforge.net/release/xsl/current/manpages/profile-docbook.xsl $<

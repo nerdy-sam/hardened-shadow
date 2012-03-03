@@ -2,8 +2,9 @@
 <!--
    Copyright (c) 1989 - 1990, Julianne Frances Haugh
    Copyright (c) 2007 - 2008, Nicolas François
+   Copyright (c) 2012, Paweł Hajdan, Jr.
    All rights reserved.
-  
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
@@ -15,7 +16,7 @@
    3. The name of the copyright holders or contributors may not be used to
       endorse or promote products derived from this software without
       specific prior written permission.
-  
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -31,7 +32,6 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.5//EN"
   "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <refentry id='su.1'>
-  <!--  $Id: su.1.xml 3018 2009-06-11 20:01:21Z nekral-guest $ -->
   <refmeta>
     <refentrytitle>su</refentrytitle>
     <manvolnum>1</manvolnum>
@@ -41,6 +41,7 @@
     <refname>su</refname>
     <refpurpose>change user ID or become superuser</refpurpose>
   </refnamediv>
+
   <refsynopsisdiv id='synopsis'>
     <cmdsynopsis>
       <command>su</command>
@@ -59,7 +60,7 @@
     <title>DESCRIPTION</title>
     <para>
       The <command>su</command> command is used to become another user during
-      a login session. Invoked without a <option>username</option>, 
+      a login session. Invoked without a <option>username</option>,
       <command>su</command> defaults to
       becoming the superuser. The optional argument <option>-</option> may
       be used to provide an environment similar to what the user would
@@ -83,21 +84,6 @@
     <para>The user will be prompted for a password, if appropriate. Invalid
       passwords will produce an error message. All attempts, both valid and
       invalid, are logged to detect abuse of the system.
-    </para>
-
-    <para>
-      The current environment is passed to the new shell. The value of
-      <envar>$PATH</envar> is reset to <filename>/bin:/usr/bin</filename>
-      for normal users, or <filename>/sbin:/bin:/usr/sbin:/usr/bin</filename>
-      for the superuser. This may be changed with the
-      <option>ENV_PATH</option> and <option>ENV_SUPATH</option>
-      definitions in <filename>/etc/login.defs</filename>.
-    </para>
-
-    <para>
-      A subsystem login is indicated by the presence of a "*" as the first
-      character of the login shell. The given home directory will be used as
-      the root of a new file system which the user is actually logged into.
     </para>
   </refsect1>
 
@@ -193,10 +179,7 @@
 		<term><envar>$PATH</envar></term>
 		<listitem>
 		  <para>
-		    reset according to the
-		    <filename>/etc/login.defs</filename> options
-		    <option>ENV_PATH</option> or
-		    <option>ENV_SUPATH</option> (see below);
+		    reset to default sane value
 		  </para>
 		</listitem>
 	      </varlistentry>
@@ -204,9 +187,7 @@
 		<term><envar>$IFS</envar></term>
 		<listitem>
 		  <para>
-		    reset to
-		    <quote>&lt;space&gt;&lt;tab&gt;&lt;newline&gt;</quote>,
-		    if it was set.
+		    reset to default sane value
 		  </para>
 		</listitem>
 	      </varlistentry>
@@ -216,97 +197,6 @@
 	    If the target user has a restricted shell, this option has no
 	    effect (unless <command>su</command> is called by root).
 	  </para>
-	  <para>
-	    Note that the default behavior for the environment is the
-	    following:
-	    <variablelist>
-	      <varlistentry><term></term><listitem>
-		  <para>
-		    The <envar>$HOME</envar>, <envar>$SHELL</envar>,
-		    <envar>$USER</envar>, <envar>$LOGNAME</envar>,
-		    <envar>$PATH</envar>, and <envar>$IFS</envar>
-		    environment variables are reset.
-		  </para>
-		</listitem>
-	      </varlistentry>
-	      <varlistentry><term></term><listitem>
-		  <para>
-		    If <option>--login</option> is not used, the
-		    environment is copied, except for the variables above.
-		  </para>
-		</listitem>
-	      </varlistentry>
-	      <varlistentry><term></term><listitem>
-		  <para>
-		    If <option>--login</option> is used, the
-		    <envar>$TERM</envar>, <envar>$COLORTERM</envar>,
-		    <envar>$DISPLAY</envar>, and
-		    <envar>$XAUTHORITY</envar> environment variables are
-		    copied if they were set.
-		  </para>
-		</listitem>
-	      </varlistentry>
-	      <varlistentry condition="no_pam"><term></term><listitem>
-		  <para>
-		    If <option>--login</option> is used, the
-		    <envar>$TZ</envar>, <envar>$HZ</envar>, and
-		    <envar>$MAIL</envar> environment
-		    variables are set according to the 
-		    <filename>/etc/login.defs</filename>
-		    options <option>ENV_TZ</option>,
-		    <option>ENV_HZ</option>, <option>MAIL_DIR</option>, and
-		    <option>MAIL_FILE</option> (see below).
-		  </para>
-		</listitem>
-	      </varlistentry>
-	      <varlistentry condition="no_pam"><term></term><listitem>
-		  <para>
-		    If <option>--login</option> is used, other environment
-		    variables might be set by the
-		    <option>ENVIRON_FILE</option> file (see below).
-		  </para>
-		</listitem>
-	      </varlistentry>
-	      <varlistentry condition="pam"><term></term><listitem>
-		  <para>
-		    Other environment might be set by PAM modules.
-		  </para>
-		</listitem>
-	      </varlistentry>
-	    </variablelist>
-	  </para>
-	</listitem>
-      </varlistentry>
-    </variablelist>
-  </refsect1>
-
-  <refsect1 id='caveats'>
-    <title>CAVEATS</title>
-    <para>
-      This version of <command>su</command> has many compilation options,
-      only some of which may be in use at any particular site.
-    </para>
-  </refsect1>
-
-  <refsect1 id='files'>
-    <title>FILES</title>
-    <variablelist>
-      <varlistentry>
-	<term><filename>/etc/passwd</filename></term>
-	<listitem>
-	  <para>User account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term><filename>/etc/shadow</filename></term>
-	<listitem>
-	  <para>Secure user account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term><filename>/etc/login.defs</filename></term>
-	<listitem>
-	  <para>Shadow password suite configuration.</para>
 	</listitem>
       </varlistentry>
     </variablelist>
@@ -314,14 +204,9 @@
 
   <refsect1 id='see_also'>
     <title>SEE ALSO</title>
-    <para><citerefentry>
+    <para>
+      <citerefentry>
 	<refentrytitle>login</refentrytitle><manvolnum>1</manvolnum>
-      </citerefentry>,
-      <citerefentry>
-	<refentrytitle>login.defs</refentrytitle><manvolnum>5</manvolnum>
-      </citerefentry>,
-      <citerefentry>
-	<refentrytitle>sg</refentrytitle><manvolnum>1</manvolnum>
       </citerefentry>,
       <citerefentry>
 	<refentrytitle>sh</refentrytitle><manvolnum>1</manvolnum>

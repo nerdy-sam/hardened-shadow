@@ -2,8 +2,9 @@
 <!--
    Copyright (c) 1989 - 1994, Julianne Frances Haugh
    Copyright (c) 2007 - 2009, Nicolas François
+   Copyright (c) 2012, Paweł Hajdan, Jr.
    All rights reserved.
-  
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
@@ -15,7 +16,7 @@
    3. The name of the copyright holders or contributors may not be used to
       endorse or promote products derived from this software without
       specific prior written permission.
-  
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -31,7 +32,6 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.5//EN"
   "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <refentry id='passwd.1'>
-  <!--  $Id: passwd.1.xml 3014 2009-06-05 21:14:12Z nekral-guest $ -->
   <refmeta>
     <refentrytitle>passwd</refentrytitle>
     <manvolnum>1</manvolnum>
@@ -87,57 +87,8 @@
 	match in order for the password to be changed.
       </para>
 
-      <para>
-	Then, the password is tested for complexity. As a general guideline,
-	passwords should consist of 6 to 8 characters including one or more
-	characters from each of the following sets:
-      </para>
-
-      <itemizedlist mark='bullet'>
-	<listitem>
-	  <para>lower case alphabetics</para>
-	</listitem>
-	<listitem>
-	  <para>digits 0 thru 9</para>
-	</listitem>
-	<listitem>
-	  <para>punctuation marks</para>
-	</listitem>
-      </itemizedlist>
-
-      <para>
-	Care must be taken not to include the system default erase or kill
-	characters. <command>passwd</command> will reject any password which
-	is not suitably complex.
-      </para>
-
     </refsect2>
 
-    <refsect2 id='hints_for_user_passwords'>
-      <title>Hints for user passwords</title>
-      <para>
-	The security of a password depends upon the strength of the
-	encryption algorithm and the size of the key space. The legacy
-	<emphasis>UNIX</emphasis> System encryption method is based on the
-	NBS DES algorithm. More recent methods are now recommended (see
-	<option>ENCRYPT_METHOD</option>). The size of the key space
-	depends upon the randomness of the password which is selected.
-      </para>
-
-      <para>
-	Compromises in password security normally result from careless
-	password selection or handling. For this reason, you should not
-	select a password which appears in a dictionary or which must be
-	written down. The password should also not be a proper name, your
-	license number, birth date, or street address. Any of these may be
-	used as guesses to violate system security.
-      </para>
-
-      <para>
-	You can find advices on how to choose a strong password on
-	http://en.wikipedia.org/wiki/Password_strength
-      </para>
-    </refsect2>
   </refsect1>
 
   <refsect1 id='options'>
@@ -259,22 +210,12 @@
       </varlistentry>
       <varlistentry>
 	<term>
-	  <option>-r</option>, <option>--repository</option> <replaceable>REPOSITORY</replaceable>
-	</term>
-	<listitem>
-	  <para>
-	    change password in <replaceable>REPOSITORY</replaceable> repository
-	  </para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term>
 	  <option>-S</option>, <option>--status</option>
 	</term>
 	<listitem>
 	  <para>
 	    Display account status information. The status information
-	    consists of 7 fields. The first field is the user's login name. 
+	    consists of 7 fields. The first field is the user's login name.
 	    The second field indicates if the user account has a locked
 	    password (L),
 	    has no password (NP), or has a usable password (P). The third
@@ -326,105 +267,6 @@
     </variablelist>
   </refsect1>
 
-  <refsect1 id='caveats'>
-    <title>CAVEATS</title>
-    <para>
-      Password complexity checking may
-      vary from site to site. The user is urged to select a password as
-      complex as he or she feels comfortable with.
-    </para>
-    <para>
-      Users may not be able to 
-      change their password on a system if NIS is enabled and they are not 
-      logged into the NIS server.
-    </para>
-    <para condition="pam">
-      <command>passwd</command> uses PAM to authenticate users and to
-      change their passwords.
-    </para>
-  </refsect1>
-
-  <refsect1 id='files'>
-    <title>FILES</title>
-    <variablelist>
-      <varlistentry>
-	<term><filename>/etc/passwd</filename></term>
-	<listitem>
-	  <para>User account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry>
-	<term><filename>/etc/shadow</filename></term>
-	<listitem>
-	  <para>Secure user account information.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry condition="no_pam">
-	<term><filename>/etc/login.defs</filename></term>
-	<listitem>
-	  <para>Shadow password suite configuration.</para>
-	</listitem>
-      </varlistentry>
-      <varlistentry condition="pam">
-	<term><filename>/etc/pam.d/passwd</filename></term>
-	<listitem>
-	  <para>PAM configuration for <command>passwd</command>.</para>
-	</listitem>
-      </varlistentry>
-    </variablelist>
-  </refsect1>
-
-  <refsect1 id='exit_values'>
-    <title>EXIT VALUES</title>
-    <para>
-      The <command>passwd</command> command exits with the following values:
-      <variablelist>
-	<varlistentry>
-	  <term><replaceable>0</replaceable></term>
-	  <listitem>
-	    <para>success</para>
-	  </listitem>
-	</varlistentry>
-	<varlistentry>
-	  <term><replaceable>1</replaceable></term>
-	  <listitem>
-	    <para>permission denied</para>
-	  </listitem>
-	</varlistentry>
-	<varlistentry>
-	  <term><replaceable>2</replaceable></term>
-	  <listitem>
-	    <para>invalid combination of options</para>
-	    </listitem>
-	</varlistentry>
-	<varlistentry>
-	  <term><replaceable>3</replaceable></term>
-	  <listitem>
-	    <para>unexpected failure, nothing done</para>
-	  </listitem>
-	</varlistentry>
-	<varlistentry>
-	  <term><replaceable>4</replaceable></term>
-	  <listitem>
-	    <para>unexpected failure, <filename>passwd</filename> file missing</para>
-	  </listitem>
-	</varlistentry>
-	<varlistentry>
-	  <term><replaceable>5</replaceable></term>
-	  <listitem>
-	    <para><filename>passwd</filename> file busy, try again</para>
-	  </listitem>
-	</varlistentry>
-	<varlistentry>
-	  <term><replaceable>6</replaceable></term>
-	  <listitem>
-	    <para>invalid argument to option</para>
-	  </listitem>
-	</varlistentry>
-      </variablelist>
-    </para>
-  </refsect1>
-
   <refsect1 id='see_also'>
     <title>SEE ALSO</title>
     <para>
@@ -434,11 +276,6 @@
       <citerefentry>
 	<refentrytitle>shadow</refentrytitle><manvolnum>5</manvolnum>
       </citerefentry>,
-      <phrase condition="no_pam">
-	<citerefentry>
-	  <refentrytitle>login.defs</refentrytitle><manvolnum>5</manvolnum>
-	</citerefentry>,
-      </phrase>
       <citerefentry>
 	<refentrytitle>usermod</refentrytitle><manvolnum>8</manvolnum>
       </citerefentry>.

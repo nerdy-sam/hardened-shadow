@@ -3,8 +3,9 @@
    Copyright (c) 1992       , Julianne Frances Haugh
    Copyright (c) 1992       , Phillip Street
    Copyright (c) 2007 - 2009, Nicolas François
+   Copyright (c) 2012, Paweł Hajdan, Jr.
    All rights reserved.
-  
+
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
@@ -16,7 +17,7 @@
    3. The name of the copyright holders or contributors may not be used to
       endorse or promote products derived from this software without
       specific prior written permission.
-  
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
@@ -29,8 +30,9 @@
    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 -->
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.5//EN"
+  "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <refentry id='lastlog.8'>
-  <!-- $Id: lastlog.8.xml 2513 2009-03-14 11:11:04Z nekral-guest $ -->
   <refmeta>
     <refentrytitle>lastlog</refentrytitle>
     <manvolnum>8</manvolnum>
@@ -40,7 +42,7 @@
     <refname>lastlog</refname>
     <refpurpose>reports the most recent login of all users or of a given user</refpurpose>
   </refnamediv>
-  <!-- body begins here -->
+
   <refsynopsisdiv id='synopsis'>
     <cmdsynopsis>
       <command>lastlog</command>
@@ -141,18 +143,6 @@
       you have in <filename>passwd</filename> users with a high UID). You can
       display its real size with "<command>ls -s</command>".
     </para>
-  </refsect1>
-
-  <refsect1 id='files'>
-    <title>FILES</title>
-    <variablelist>
-      <varlistentry>
-	<term><filename>/var/log/lastlog</filename></term>
-	<listitem>
-	  <para>Database times of previous user logins.</para>
-	</listitem>
-      </varlistentry>
-    </variablelist>
   </refsect1>
 
   <refsect1 id='caveats'>
