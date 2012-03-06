@@ -38,11 +38,11 @@
 #include <unistd.h>
 
 enum entry_type {
-  BOOL,
-  INTEGER,
-  MODE,
-  PATH,
-  RANGE
+  BOOL,  /* Boolean: true or false. */
+  INTEGER,  /* Integer, positive or negative. min and max determine bounds. */
+  MODE,  /* File mode bits (permissions). Octal. */
+  PATH,  /* Filesystem path (must exist). */
+  RANGE  /* Range of integers. min and max determine bounds. */
 };
 
 struct config_entry {
@@ -99,7 +99,9 @@ static bool validate_config_entries(void) {
   bool valid = true;
   for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(config_entries); i++) {
     if (!validate_config_entry(&config_entries[i])) {
-      warnx("invalid value for key '%s': '%s'", config_entries[i].key, config_entries[i].value);
+      warnx("invalid value for key '%s': '%s'",
+            config_entries[i].key,
+            config_entries[i].value);
       valid = false;
     }
   }
@@ -191,7 +193,10 @@ bool hardened_shadow_config_get_integer(const char *key, intmax_t *result) {
 
     if (config_entries[i].type != INTEGER)
       return false;
-    return hardened_shadow_strtonum(config_entries[i].value, config_entries[i].min, config_entries[i].max, result);
+    return hardened_shadow_strtonum(config_entries[i].value,
+                                    config_entries[i].min,
+                                    config_entries[i].max,
+                                    result);
   }
 
   return false;
@@ -226,14 +231,20 @@ bool hardened_shadow_config_get_path(const char *key, const char **result) {
   return false;
 }
 
-bool hardened_shadow_config_get_range(const char *key, intmax_t *minresult, intmax_t *maxresult) {
+bool hardened_shadow_config_get_range(const char *key,
+                                      intmax_t *minresult,
+                                      intmax_t *maxresult) {
   for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(config_entries); i++) {
     if (strcmp(key, config_entries[i].key) != 0)
       continue;
 
     if (config_entries[i].type != RANGE)
       return false;
-    return hardened_shadow_getrange(config_entries[i].value, config_entries[i].min, config_entries[i].max, minresult, maxresult);
+    return hardened_shadow_getrange(config_entries[i].value,
+                                    config_entries[i].min,
+                                    config_entries[i].max,
+                                    minresult,
+                                    maxresult);
   }
 
   return false;

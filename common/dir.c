@@ -49,6 +49,7 @@ bool hardened_shadow_remove_dir_contents(const char *path) {
   FTS *fts_handle = NULL;
   char *fts_argv[] = { strdup(path), NULL };
 
+  /* Make sure strdup above succeeded. */
   if (!fts_argv[0]) {
     result = false;
     goto out;
@@ -66,10 +67,12 @@ bool hardened_shadow_remove_dir_contents(const char *path) {
     switch (fts_entry->fts_info) {
       case FTS_DNR:
       case FTS_NS:
+        /* Warn about the problem, but continue deleting files. */
         warnx("%s: %s", fts_entry->fts_path, strerror(fts_entry->fts_errno));
         result = false;
         break;
       case FTS_ERR:
+        /* We consider this a fatal error, i.e. abort processing now. */
         warnx("%s: %s", fts_entry->fts_path, strerror(fts_entry->fts_errno));
         result = false;
         goto out;
@@ -97,21 +100,32 @@ out:
   return result;
 }
 
-static bool copy_dir(const char *source, const char *destination, uid_t uid, gid_t gid, const struct stat *sb) {
-  if (mkdir(destination, sb->st_mode) != 0)
+static bool copy_dir(const char *source,
+                     const char *destination,
+                     uid_t uid,
+                     gid_t gid,
+                     const struct stat *sb) {
+  if (mkdir(destination, (sb->st_mode) & (~S_IFMT)) != 0)
     return false;
-  if (chown(destination, (uid == (uid_t)-1) ? sb->st_uid : uid, (gid == (gid_t)-1) ? sb->st_gid : gid) != 0) {
+
+  if (chown(destination, uid, gid) != 0)
     return false;
-  }
+
   if (chmod(destination, (sb->st_mode) & (~S_IFMT)) != 0)
     return false;
 
   return hardened_shadow_copy_dir_contents(source, destination, uid, gid);
 }
 
-static bool copy_symlink(const char *source, const char *destination, uid_t uid, gid_t gid, const struct stat *sb) {
+static bool copy_symlink(const char *source,
+                         const char *destination,
+                         uid_t uid,
+                         gid_t gid,
+                         UNUSED const struct stat *sb) {
   char link_destination[PATH_MAX];
 
+  if (!hardened_shadow_usub_ok(sizeof(link_destination), 1, SIZE_MAX))
+    return false;
   ssize_t rv = readlink(source, link_destination, sizeof(link_destination) - 1);
   if (rv == -1)
     return false;
@@ -119,27 +133,33 @@ static bool copy_symlink(const char *source, const char *destination, uid_t uid,
   link_destination[rv] = '\0';
   if (symlink(link_destination, destination) != 0)
     return false;
-  if (lchown(destination, (uid == (uid_t)-1) ? sb->st_uid : uid, (gid == (gid_t)-1) ? sb->st_gid : gid) != 0) {
+
+  if (lchown(destination, uid, gid) != 0)
     return false;
-  }
 
   return true;
 }
 
-static bool copy_file(const char *source, const char *destination, uid_t uid, gid_t gid, const struct stat *sb) {
+static bool copy_file(const char *source,
+                      const char *destination,
+                      uid_t uid,
+                      gid_t gid,
+                      const struct stat *sb) {
   int source_fd = open(source, O_RDONLY | O_CLOEXEC);
   if (source_fd < 0)
     return false;
 
   bool result = true;
 
-  int destination_fd = open(destination, O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, (sb->st_mode) & (~S_IFMT));
+  int destination_fd = open(destination,
+                            O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC,
+                            (sb->st_mode) & (~S_IFMT));
   if (destination_fd < 0) {
     result = false;
     goto out;
   }
 
-  if (fchown(destination_fd, (uid == (uid_t)-1) ? sb->st_uid : uid, (gid == (gid_t)-1) ? sb->st_gid : gid) != 0) {
+  if (fchown(destination_fd, uid, gid) != 0) {
     result = false;
     goto out;
   }
@@ -161,18 +181,27 @@ out:
   return result;
 }
 
-static bool copy_special(UNUSED const char *source, const char *destination, uid_t uid, gid_t gid, const struct stat *sb) {
+static bool copy_special(UNUSED const char *source,
+                         const char *destination,
+                         uid_t uid,
+                         gid_t gid,
+                         const struct stat *sb) {
   if (mknod(destination, sb->st_mode, sb->st_rdev) != 0)
     return false;
-  if (chown(destination, (uid == (uid_t)-1) ? sb->st_uid : uid, (gid == (gid_t)-1) ? sb->st_gid : gid) != 0) {
+
+  if (chown(destination, uid, gid) != 0)
     return false;
-  }
+
   if (chmod(destination, (sb->st_mode) & (~S_IFMT)) != 0)
     return false;
+
   return true;
 }
 
-static bool copy_entry(const char *source, const char *destination, uid_t uid, gid_t gid) {
+static bool copy_entry(const char *source,
+                       const char *destination,
+                       uid_t uid,
+                       gid_t gid) {
   struct stat sb;
   if (lstat(source, &sb) != 0)
     return false;
@@ -203,7 +232,13 @@ static bool copy_entry(const char *source, const char *destination, uid_t uid, g
   return true;
 }
 
-bool hardened_shadow_copy_dir_contents(const char *source, const char *destination, uid_t uid, gid_t gid) {
+bool hardened_shadow_copy_dir_contents(const char *source,
+                                       const char *destination,
+                                       uid_t uid,
+                                       gid_t gid) {
+  if (uid == (uid_t)-1 || gid == (gid_t)-1)
+    return false;
+
   DIR *dir = opendir(source);
   if (!dir)
     return false;

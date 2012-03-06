@@ -44,8 +44,11 @@
 #include <time.h>
 #include <unistd.h>
 
-static const int kDirectoryOpenFlags = O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW;
+/* Common flags we use when opening directories in a secure way. */
+static const int kDirectoryOpenFlags =
+    O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW;
 
+/* File descriptor for the /etc/hardened-shadow directory. */
 static int internal_hardened_shadow_fd = -1;
 
 static void __attribute__((destructor)) hardened_shadow_fd_cleanup(void) {
@@ -65,7 +68,8 @@ static void maybe_open_hardened_shadow_directory(void) {
   if (etc_fd < 0)
     goto err_etc;
 
-  internal_hardened_shadow_fd = TEMP_FAILURE_RETRY(openat(etc_fd, "hardened-shadow", kDirectoryOpenFlags));
+  internal_hardened_shadow_fd = TEMP_FAILURE_RETRY(
+      openat(etc_fd, "hardened-shadow", kDirectoryOpenFlags));
   TEMP_FAILURE_RETRY(close(etc_fd));
 err_etc:
   TEMP_FAILURE_RETRY(close(root_fd));
@@ -77,8 +81,11 @@ int hardened_shadow_fd(void) {
 }
 
 int hardened_shadow_open_user_directory(const char *username) {
-  int fd = TEMP_FAILURE_RETRY(openat(hardened_shadow_fd(), username, kDirectoryOpenFlags));
+  int fd = TEMP_FAILURE_RETRY(
+      openat(hardened_shadow_fd(), username, kDirectoryOpenFlags));
 
+  /* Make sure that what we are opening is really a directory.
+   * User-owned paths should not be fully trusted. */
   struct stat sb;
   if (fstat(fd, &sb) != 0 || !S_ISDIR(sb.st_mode)) {
     TEMP_FAILURE_RETRY(close(fd));
@@ -88,9 +95,13 @@ int hardened_shadow_open_user_directory(const char *username) {
   return fd;
 }
 
-int hardened_shadow_open_user_file(int user_directory_fd, char *name, int flags) {
+int hardened_shadow_open_user_file(int user_directory_fd,
+                                   char *name,
+                                   int flags) {
   int fd = TEMP_FAILURE_RETRY(openat(user_directory_fd, name, flags));
 
+  /* Make sure what we are opening is really a regular file.
+   * User-owned paths should not be fully trusted. */
   struct stat sb;
   if (fstat(fd, &sb) != 0 || !S_ISREG(sb.st_mode)) {
     TEMP_FAILURE_RETRY(close(fd));
@@ -100,44 +111,62 @@ int hardened_shadow_open_user_file(int user_directory_fd, char *name, int flags)
   return fd;
 }
 
-static bool create_temp_user_file(const char *username, uid_t uid, const char *contents, char **path) {
-  if (asprintf(path, "/etc/hardened-shadow/%s/.tmp.XXXXXX", username) < 0)
-    return false;
-  int tmp_fd = mkostemp(*path, O_CLOEXEC);
-  if (tmp_fd < 0)
+/* Creates a temporary file in given user's hardened-shadow subdirectory. */
+static bool create_temp_user_file(const char *username,
+                                  uid_t uid,
+                                  const char *contents,
+                                  char **path) {
+  *path = NULL;
+
+  gid_t hardened_shadow_gid;
+  if (!hardened_shadow_get_hardened_shadow_gid(&hardened_shadow_gid))
     return false;
 
   bool result = true;
+  int tmp_fd = -1;
 
-  gid_t hardened_shadow_gid;
-  if (!hardened_shadow_get_hardened_shadow_gid(&hardened_shadow_gid)) {
+  if (asprintf(path, "/etc/hardened-shadow/%s/.tmp.XXXXXX", username) < 0) {
     result = false;
     goto out;
   }
+
+  tmp_fd = mkostemp(*path, O_CLOEXEC);
+  if (tmp_fd < 0) {
+    result = false;
+    goto out;
+  }
+
   if (fchown(tmp_fd, uid, hardened_shadow_gid) != 0) {
     result = false;
     goto out;
   }
+
   if (fchmod(tmp_fd, 0640) != 0) {
     result = false;
     goto out;
   }
 
-  ssize_t contents_length = strlen(contents);
-  if (hardened_shadow_write(tmp_fd, contents, contents_length) != contents_length ||
+  ssize_t length = strlen(contents);
+  if (hardened_shadow_write(tmp_fd, contents, length) != length ||
       fdatasync(tmp_fd) != 0) {
     result = false;
     goto out;
   }
 
 out:
-  TEMP_FAILURE_RETRY(close(tmp_fd));
-  if (!result)
-    unlink(*path);
+  if (tmp_fd != -1)
+    TEMP_FAILURE_RETRY(close(tmp_fd));
+  if (!result) {
+    if (*path)
+      unlink(*path);
+    free(*path);
+    *path = NULL;
+  }
   return result;
 }
 
-void hardened_shadow_close_file_state(struct hardened_shadow_file_state *state) {
+void hardened_shadow_close_file_state(
+    struct hardened_shadow_file_state *state) {
   free(state->tmp_path);
 
   if (state->tmp_file)
@@ -148,7 +177,9 @@ void hardened_shadow_close_file_state(struct hardened_shadow_file_state *state) 
   memset(state, '\0', sizeof(*state));
 }
 
-bool hardened_shadow_begin_rewrite_file(const char *path, struct hardened_shadow_file_state *state) {
+bool hardened_shadow_begin_rewrite_file(
+    const char *path,
+    struct hardened_shadow_file_state *state) {
   memset(state, '\0', sizeof(*state));
 
   state->tmp_path = strdup("/etc/.hardened-shadow.XXXXXX");
@@ -180,10 +211,14 @@ error:
   return false;
 }
 
-bool hardened_shadow_end_rewrite_file(const char *path, struct hardened_shadow_file_state *state) {
+bool hardened_shadow_end_rewrite_file(
+    const char *path,
+    struct hardened_shadow_file_state *state) {
   bool result = true;
 
-  if (fchown(fileno(state->tmp_file), state->original_stat.st_uid, state->original_stat.st_gid) != 0) {
+  if (fchown(fileno(state->tmp_file),
+             state->original_stat.st_uid,
+             state->original_stat.st_gid) != 0) {
     result = false;
     goto out;
   }
@@ -203,6 +238,7 @@ out:
   return result;
 }
 
+/* fgetgrent wrapper that takes a memory buffer instead of a file. */
 struct group *hardened_shadow_sgetgrent(char *buf) {
   FILE *stream = fmemopen(buf, strlen(buf), "r");
   if (!stream)
@@ -212,6 +248,7 @@ struct group *hardened_shadow_sgetgrent(char *buf) {
   return result;
 }
 
+/* fgetpwent wrapper that takes a memory buffer instead of a file. */
 struct passwd *hardened_shadow_sgetpwent(char *buf) {
   FILE *stream = fmemopen(buf, strlen(buf), "r");
   if (!stream)
@@ -234,8 +271,8 @@ bool hardened_shadow_replace_file(const char *contents, const char *filename) {
     goto out;
   }
 
-  ssize_t contents_length = strlen(contents);
-  if (hardened_shadow_write(tmp_fd, contents, contents_length) != contents_length ||
+  ssize_t length = strlen(contents);
+  if (hardened_shadow_write(tmp_fd, contents, length) != length ||
       fdatasync(tmp_fd) != 0) {
     result = false;
     unlink(tmp_path);
@@ -255,7 +292,10 @@ out:
   return result;
 }
 
-bool hardened_shadow_replace_user_file(const char *username, uid_t uid, const char *contents, const char *filename) {
+bool hardened_shadow_replace_user_file(const char *username,
+                                       uid_t uid,
+                                       const char *contents,
+                                       const char *filename) {
   bool result = true;
   int user_directory_fd = -1;
 
@@ -271,10 +311,14 @@ bool hardened_shadow_replace_user_file(const char *username, uid_t uid, const ch
     goto out;
   }
 
-  if (renameat(user_directory_fd, basename(tmp_path), user_directory_fd, filename) != 0) {
+  if (renameat(user_directory_fd,
+               basename(tmp_path),
+               user_directory_fd,
+               filename) != 0) {
     result = false;
     goto out;
   }
+
   if (fsync(user_directory_fd) != 0) {
     result = false;
     goto out;
@@ -300,15 +344,20 @@ bool hardened_shadow_update_passwd_change_gid(gid_t old_gid, gid_t new_gid) {
   while (hardened_shadow_getline(state.original_file, &original_line)) {
     struct passwd *pwd = hardened_shadow_sgetpwent(original_line);
     if (pwd) {
+      /* Change GID on match. */
       if (pwd->pw_gid == old_gid)
         pwd->pw_gid = new_gid;
+
       if (putpwent(pwd, state.tmp_file) != 0) {
         result = false;
         goto out;
       }
-    } else if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
-      result = false;
-      goto out;
+    } else {
+      /* The line we read is not valid. Just copy it without changes. */
+      if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
+        result = false;
+        goto out;
+      }
     }
   }
   if (!feof(state.original_file)) {
@@ -340,14 +389,22 @@ bool hardened_shadow_update_passwd_shell_proxy(void) {
     struct passwd *pwd = hardened_shadow_sgetpwent(original_line);
     if (pwd) {
       char *shell_buffer = NULL;
-
       if (hardened_shadow_is_valid_login_shell(pwd->pw_shell)) {
-        if (!hardened_shadow_replace_user_file(pwd->pw_name, pwd->pw_uid, pwd->pw_shell, "shell")) {
+        /* The shell is valid. Update the user-private shell file
+         * and use /bin/shell_proxy in /etc/passwd. */
+
+        if (!hardened_shadow_replace_user_file(pwd->pw_name,
+                                               pwd->pw_uid,
+                                               pwd->pw_shell,
+                                               "shell")) {
           result = false;
           goto out;
         }
 
-        pwd->pw_shell = shell_buffer = realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
+        /* Remove any redundant slashes ("/") from the path, so that /etc/shell
+         * lookup can work. */
+        pwd->pw_shell = shell_buffer =
+            realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
         if (!pwd->pw_shell) {
           result = false;
           goto out;
@@ -360,9 +417,12 @@ bool hardened_shadow_update_passwd_shell_proxy(void) {
         result = false;
         goto out;
       }
-    } else if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
-      result = false;
-      goto out;
+    } else {
+      /* The line we read is not valid. Just copy it without changes. */
+      if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
+        result = false;
+        goto out;
+      }
     }
   }
   if (!feof(state.original_file)) {
@@ -381,7 +441,10 @@ out:
 }
 
 bool hardened_shadow_update_passwd_undo_shell_proxy(void) {
-  char *shell_proxy = realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
+  /* Remove any redundant slashes ("/") from the path, so that exact string
+   * matching can work. */
+  char *shell_proxy =
+      realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
   if (!shell_proxy)
     return false;
 
@@ -398,18 +461,24 @@ bool hardened_shadow_update_passwd_undo_shell_proxy(void) {
     struct passwd *pwd = hardened_shadow_sgetpwent(original_line);
     if (pwd) {
       if (strcmp(pwd->pw_shell, shell_proxy) == 0) {
+        /* The user is using /bin/shell_proxy. Restore original shell. */
+
         int user_fd = hardened_shadow_open_user_directory(pwd->pw_name);
         if (user_fd < 0) {
           warn("hardened_shadow_open_user_directory failed");
           result = false;
           goto out;
         }
-        int shell_fd = hardened_shadow_open_user_file(user_fd, "shell", O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW);
+
+        int shell_fd = hardened_shadow_open_user_file(
+            user_fd, "shell", O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW);
         if (shell_fd < 0) {
           warn("hardened_shadow_open_user_file failed");
           result = false;
           goto out;
         }
+
+        /* Update to-be-written passwd entry with contents of the shell file. */
         if (!hardened_shadow_read_contents(shell_fd, &pwd->pw_shell, NULL)) {
           warn("hardened_shadow_read_contents failed");
           result = false;
@@ -424,9 +493,12 @@ bool hardened_shadow_update_passwd_undo_shell_proxy(void) {
         result = false;
         goto out;
       }
-    } else if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
-      result = false;
-      goto out;
+    } else {
+      /* The line we read is not valid. Just copy it without changes. */
+      if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
+        result = false;
+        goto out;
+      }
     }
   }
   if (!feof(state.original_file)) {
@@ -445,6 +517,7 @@ out:
   return result;
 }
 
+/* Returns length of a NULL-terminated array list. */
 static size_t list_length(char **list) {
   size_t result = 0;
   while (*list) {
@@ -454,7 +527,11 @@ static size_t list_length(char **list) {
   return result;
 }
 
-bool hardened_shadow_update_group_add_user(const char *user_name, const gid_t *groups, size_t groups_length, bool append) {
+bool hardened_shadow_update_group_add_user(const char *user_name,
+                                           const gid_t *groups,
+                                           size_t groups_length,
+                                           bool append) {
+  /* Use strdup to avoid casting away constness. */
   char *dup_user_name = strdup(user_name);
   if (!dup_user_name)
     return false;
@@ -473,6 +550,7 @@ bool hardened_shadow_update_group_add_user(const char *user_name, const gid_t *g
     if (gr) {
       char **new_mem = NULL;
 
+      /* Check if this is one of the groups we are operating on. */
       bool target_group = false;
       for (size_t i = 0; i < groups_length; i++) {
         if (gr->gr_gid == groups[i]) {
@@ -482,18 +560,26 @@ bool hardened_shadow_update_group_add_user(const char *user_name, const gid_t *g
       }
 
       if (target_group) {
+        /* Allocate new members list (plus 1 entry for the new user
+         * and 1 for NULL terminator). */
         size_t mem_length = list_length(gr->gr_mem);
+        if (!hardened_shadow_uadd_ok(mem_length, 2, SIZE_MAX)) {
+          result = false;
+          goto out;
+        }
         new_mem = hardened_shadow_calloc(mem_length + 2, sizeof(*new_mem));
         if (!new_mem) {
           result = false;
           goto out;
         }
 
+        /* Copy old members list. */
         for (size_t i = 0; i < mem_length; i++)
           new_mem[i] = gr->gr_mem[i];
         new_mem[mem_length] = NULL;
         gr->gr_mem = new_mem;
 
+        /* Add new user unless he is already a member. */
         bool found = false;
         for (size_t i = 0; i < mem_length; i++) {
           if (strcmp(gr->gr_mem[i], dup_user_name) == 0) {
@@ -501,36 +587,35 @@ bool hardened_shadow_update_group_add_user(const char *user_name, const gid_t *g
             break;
           }
         }
-
         if (!found) {
           gr->gr_mem[mem_length] = dup_user_name;
           gr->gr_mem[mem_length + 1] = NULL;
         }
-      }
-
-      int rv = putgrent(gr, state.tmp_file);
-      free(new_mem);
-      if (rv != 0) {
-        result = false;
-        goto out;
-      }
-    } else if (!append) {
-      size_t mem_length = list_length(gr->gr_mem);
-      char **new_mem = hardened_shadow_calloc(mem_length + 1, sizeof(*new_mem));
-      if (!new_mem) {
-        result = false;
-        goto out;
-      }
-
-      size_t new_mem_length = 0;
-      for (size_t i = 0; i < mem_length; i++) {
-        if (strcmp(dup_user_name, gr->gr_mem[i]) != 0) {
-          new_mem[new_mem_length] = gr->gr_mem[i];
-          new_mem_length++;
+      } else if (!append) {
+        /* Allocate new members list (plus 1 entry for the NULL terminator). */
+        size_t mem_length = list_length(gr->gr_mem);
+        if (!hardened_shadow_uadd_ok(mem_length, 1, SIZE_MAX)) {
+          result = false;
+          goto out;
         }
+        char **new_mem = hardened_shadow_calloc(mem_length + 1,
+                                                sizeof(*new_mem));
+        if (!new_mem) {
+          result = false;
+          goto out;
+        }
+
+        /* Copy old members list, without the given user. */
+        size_t new_mem_length = 0;
+        for (size_t i = 0; i < mem_length; i++) {
+          if (strcmp(dup_user_name, gr->gr_mem[i]) != 0) {
+            new_mem[new_mem_length] = gr->gr_mem[i];
+            new_mem_length++;
+          }
+        }
+        new_mem[new_mem_length] = NULL;
+        gr->gr_mem = new_mem;
       }
-      new_mem[new_mem_length] = NULL;
-      gr->gr_mem = new_mem;
 
       int rv = putgrent(gr, state.tmp_file);
       free(new_mem);
@@ -538,9 +623,12 @@ bool hardened_shadow_update_group_add_user(const char *user_name, const gid_t *g
         result = false;
         goto out;
       }
-    } else if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
-      result = false;
-      goto out;
+    } else {
+      /* The line we read is not valid. Just copy it without changes. */
+      if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
+        result = false;
+        goto out;
+      }
     }
   }
   if (!feof(state.original_file)) {
@@ -559,7 +647,8 @@ out:
   return result;
 }
 
-bool hardened_shadow_update_group_change_user_name(const char *old_name, char *new_name) {
+bool hardened_shadow_update_group_change_user_name(const char *old_name,
+                                                   char *new_name) {
   bool result = true;
 
   struct hardened_shadow_file_state state;
@@ -579,11 +668,20 @@ bool hardened_shadow_update_group_change_user_name(const char *old_name, char *n
           goto out;
         }
       } else {
-        char **new_mem = hardened_shadow_calloc(mem_length + 1, sizeof(*new_mem));
+        /* Allocate new members list (plus 1 entry for the new user
+         * and 1 for NULL terminator). */
+        if (!hardened_shadow_uadd_ok(mem_length, 2, SIZE_MAX)) {
+          result = false;
+          goto out;
+        }
+        char **new_mem = hardened_shadow_calloc(mem_length + 1,
+                                                sizeof(*new_mem));
         if (!new_mem) {
           result = false;
           goto out;
         }
+
+        /* Copy old members list, changing names if necessary. */
         size_t new_mem_index = 0;
         for (size_t i = 0; i < mem_length; i++) {
           if (strcmp(gr->gr_mem[i], old_name) == 0) {
@@ -595,6 +693,7 @@ bool hardened_shadow_update_group_change_user_name(const char *old_name, char *n
         }
         new_mem[new_mem_index] = NULL;
         gr->gr_mem = new_mem;
+
         int rv = putgrent(gr, state.tmp_file);
         free(new_mem);
         if (rv != 0) {
@@ -602,9 +701,12 @@ bool hardened_shadow_update_group_change_user_name(const char *old_name, char *n
           goto out;
         }
       }
-    } else if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
-      result = false;
-      goto out;
+    } else {
+      /* The line we read is not valid. Just copy it without changes. */
+      if (fprintf(state.tmp_file, "%s\n", original_line) < 0) {
+        result = false;
+        goto out;
+      }
     }
   }
   if (!feof(state.original_file)) {
@@ -622,6 +724,7 @@ out:
   return result;
 }
 
+/* putgrent wrapper that operates on memory buffers. */
 static bool sputgrent(const struct group *grp, char **buf) {
   *buf = NULL;
   size_t buf_size;
@@ -643,6 +746,7 @@ static bool sputgrent(const struct group *grp, char **buf) {
   return result;
 }
 
+/* putpwent wrapper that operates on memory buffers. */
 static bool sputpwent(const struct passwd *pwd, char **buf) {
   *buf = NULL;
   size_t buf_size;
@@ -664,7 +768,11 @@ static bool sputpwent(const struct passwd *pwd, char **buf) {
   return result;
 }
 
-static bool hardened_shadow_replace_line(const char *line_id, const char *replacement_line, const char *file_path) {
+/* Replaces line starting with line_id with replacement_line
+ * in file identified by file_path. */
+static bool hardened_shadow_replace_line(const char *line_id,
+                                         const char *replacement_line,
+                                         const char *file_path) {
   bool result = true;
 
   struct hardened_shadow_file_state state;
@@ -683,7 +791,9 @@ static bool hardened_shadow_replace_line(const char *line_id, const char *replac
     if (matched && !replacement_line)
       continue;
 
-    if (fprintf(state.tmp_file, "%s\n", matched ? replacement_line : original_line) < 0) {
+    if (fprintf(state.tmp_file,
+                "%s\n",
+                matched ? replacement_line : original_line) < 0) {
       result = false;
       goto out;
     }
@@ -694,7 +804,9 @@ static bool hardened_shadow_replace_line(const char *line_id, const char *replac
     result = false;
     goto out;
   }
+
   if (!replaced && replacement_line) {
+    /* If the line was not present in the original file, add it at the end. */
     if (fprintf(state.tmp_file, "%s\n", replacement_line) < 0) {
       result = false;
       goto out;
@@ -712,7 +824,8 @@ out:
   return result;
 }
 
-bool hardened_shadow_replace_passwd(const char *user_name, struct passwd *replacement_pwd) {
+bool hardened_shadow_replace_passwd(const char *user_name,
+                                    struct passwd *replacement_pwd) {
   char *replacement_line = NULL;
   if (replacement_pwd && !sputpwent(replacement_pwd, &replacement_line))
     return false;
@@ -736,7 +849,8 @@ out:
   return result;
 }
 
-bool hardened_shadow_replace_group(const char *group_name, struct group *replacement_group) {
+bool hardened_shadow_replace_group(const char *group_name,
+                                   struct group *replacement_group) {
   char *replacement_line = NULL;
   if (replacement_group && !sputgrent(replacement_group, &replacement_line))
     return false;
@@ -760,7 +874,11 @@ out:
   return result;
 }
 
-bool hardened_shadow_create_shadow_entry(const struct passwd *pwd, const struct spwd *spwd, bool system, long inactive_days, long expiredate) {
+bool hardened_shadow_create_shadow_entry(const struct passwd *pwd,
+                                         const struct spwd *spwd,
+                                         bool system,
+                                         long inactive_days,
+                                         long expiredate) {
   struct spwd default_spwd;
   default_spwd.sp_namp = pwd->pw_name;
   default_spwd.sp_pwdp = HARDENED_SHADOW_LOCKED_PASSWD;
@@ -831,15 +949,24 @@ bool hardened_shadow_create_shadow_entry(const struct passwd *pwd, const struct 
     goto out;
   }
 
-  if (!hardened_shadow_replace_user_file(pwd->pw_name, pwd->pw_uid, shadow_contents, "shadow")) {
+  if (!hardened_shadow_replace_user_file(pwd->pw_name,
+                                         pwd->pw_uid,
+                                         shadow_contents,
+                                         "shadow")) {
     result = false;
     goto out;
   }
-  if (!hardened_shadow_replace_user_file(pwd->pw_name, pwd->pw_uid, aging_contents, "aging")) {
+  if (!hardened_shadow_replace_user_file(pwd->pw_name,
+                                         pwd->pw_uid,
+                                         aging_contents,
+                                         "aging")) {
     result = false;
     goto out;
   }
-  if (!hardened_shadow_replace_user_file(pwd->pw_name, pwd->pw_uid, pwd->pw_shell, "shell")) {
+  if (!hardened_shadow_replace_user_file(pwd->pw_name,
+                                         pwd->pw_uid,
+                                         pwd->pw_shell,
+                                         "shell")) {
     result = false;
     goto out;
   }
