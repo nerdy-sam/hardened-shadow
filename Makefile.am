@@ -182,4 +182,6 @@ CLEANFILES = $(man_MANS)
 
 % : %.xml
 	$(XSLTPROC) -o $@ --nonet http://docbook.sourceforge.net/release/xsl/current/manpages/profile-docbook.xsl $<
+
+man/pwunconv.8: man/pwconv.8.xml
 endif
