@@ -32,6 +32,7 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -52,6 +53,18 @@ int main(UNUSED int argc, char **argv) {
     exit(EXIT_FAILURE);
   if (!hardened_shadow_closefrom(STDERR_FILENO + 1))
     exit(EXIT_FAILURE);
+
+  if (setenv("SHELL", shell_contents, 1) != 0)
+    exit(EXIT_FAILURE);
+
+  if (!argv[0])
+    exit(EXIT_FAILURE);
+  if (argv[0][0] == '-') {
+    if (asprintf(&argv[0], "-%s", basename(shell_contents)) < 0)
+      exit(EXIT_FAILURE);
+  } else {
+    argv[0] = shell_contents;
+  }
 
   execv(shell_contents, argv);
   exit(EXIT_FAILURE);

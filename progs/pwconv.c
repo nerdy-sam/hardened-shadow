@@ -63,7 +63,7 @@ int main(int argc, char **argv UNUSED) {
   if (!hardened_shadow_config_get_range("SYSTEM_UID_RANGE", &system_min, &system_max))
     errx(EXIT_FAILURE, "failed to retrieve SYSTEM_UID_RANGE");
 
-  if (mkdir("/etc/hardened-shadow", 0751) != 0)
+  if (mkdir("/etc/hardened-shadow", 0755) != 0)
     err(EXIT_FAILURE, "mkdir");
   if (chown("/etc/hardened-shadow", 0, hardened_shadow_gid) != 0) {
     rmdir("/etc/hardened-shadow");
