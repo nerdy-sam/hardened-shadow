@@ -143,7 +143,7 @@ static void parse_args(int argc, char **argv) {
           errx(EXIT_FAILURE, "invalid group list '%s'", flag_groups);
         break;
       case 'l':
-        if (!hardened_shadow_is_valid_username(optarg))
+        if (!hardened_shadow_is_valid_user_name(optarg))
           errx(EXIT_FAILURE, "invalid user name '%s'", optarg);
         if (getpwnam(optarg))
           errx(EXIT_FAILURE, "user '%s' already exists", optarg);

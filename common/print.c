@@ -37,24 +37,6 @@
 #include <time.h>
 #include <utmp.h>
 
-const char hardened_shadow_lastlog_header[] =  "Username         Port     From             Latest";
-
-bool hardened_shadow_asprintf_lastlog(char **result, const char *username, const struct lastlog *entry) {
-  struct tm *tm = localtime(&entry->ll_time);
-  if (!tm)
-    return false;
-  char ptime[80];
-  if (entry->ll_time == 0)
-    strncpy(ptime, "**Never logged in**", sizeof(ptime) - 1);
-  else
-    strftime(ptime, sizeof(ptime), "%a %b %e %H:%M:%S %z %Y", tm);
-
-  if (asprintf(result, "%-16s %-8.8s %-16.16s %s\n", username, entry->ll_line, entry->ll_host, ptime) == -1)
-    return false;
-
-  return true;
-}
-
 static const char *pw_status(const char *pass) {
   if (*pass == '*' || strcmp(pass, HARDENED_SHADOW_LOCKED_PASSWD) == 0)
     return "L";

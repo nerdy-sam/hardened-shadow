@@ -78,10 +78,14 @@ bool hardened_shadow_config_get_bool(const char *key, bool *result);
 bool hardened_shadow_config_get_integer(const char *key, intmax_t *result);
 bool hardened_shadow_config_get_mode(const char *key, mode_t *result);
 bool hardened_shadow_config_get_path(const char *key, const char **result);
-bool hardened_shadow_config_get_range(const char *key, intmax_t *minresult, intmax_t *maxresult);
+bool hardened_shadow_config_get_range(const char *key,
+                                      intmax_t *minresult,
+                                      intmax_t *maxresult);
 
 void hardened_shadow_openlog(const char *ident);
-void hardened_shadow_syslog(int priority, const char *format, ...) __attribute__((__format__(__printf__, 2, 3)));
+void hardened_shadow_syslog(int priority,
+                            const char *format,
+                            ...) __attribute__((__format__(__printf__, 2, 3)));
 void hardened_shadow_closelog(void);
 
 bool hardened_shadow_ucast_ok(intmax_t a, uintmax_t max);
@@ -91,63 +95,94 @@ bool hardened_shadow_uadd_ok(uintmax_t a, uintmax_t b, uintmax_t max);
 bool hardened_shadow_usub_ok(uintmax_t a, uintmax_t b, uintmax_t max);
 bool hardened_shadow_umul_ok(uintmax_t a, uintmax_t b, uintmax_t max);
 
-bool hardened_shadow_sadd_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max);
-bool hardened_shadow_ssub_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max);
-bool hardened_shadow_smul_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max);
-bool hardened_shadow_sdiv_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max);
+bool hardened_shadow_sadd_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max);
+bool hardened_shadow_ssub_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max);
+bool hardened_shadow_smul_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max);
+bool hardened_shadow_sdiv_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max);
 
 void *hardened_shadow_calloc(size_t nmemb, size_t size);
 
-bool hardened_shadow_strtonum(const char *numstr, intmax_t minval, intmax_t maxval, intmax_t *result);
-bool hardened_shadow_getrange(const char *range, intmax_t minval, intmax_t maxval, intmax_t *minresult, intmax_t *maxresult);
+bool hardened_shadow_strtonum(const char *numstr,
+                              intmax_t minval,
+                              intmax_t maxval,
+                              intmax_t *result);
+bool hardened_shadow_getrange(const char *range,
+                              intmax_t minval,
+                              intmax_t maxval,
+                              intmax_t *minresult,
+                              intmax_t *maxresult);
 bool hardened_shadow_getday(const char *str, intmax_t* result);
-
-extern const char hardened_shadow_lastlog_header[];
 
 #define HARDENED_SHADOW_LOCKED_PASSWD "!"
 #define HARDENED_SHADOW_SHADOW_PASSWD "x"
 
 bool hardened_shadow_get_current_username(char **username);
-bool hardened_shadow_getgroups(gid_t **groups, size_t *ngroups);
 
 bool hardened_shadow_get_hardened_shadow_gid(gid_t *result);
 bool hardened_shadow_drop_priv(const char *user_name, uid_t uid, gid_t gid);
 
 int hardened_shadow_fd(void);
 int hardened_shadow_open_user_directory(const char *username);
-int hardened_shadow_open_user_file(int user_subdirectory_fd, char *name, int flags);
+int hardened_shadow_open_user_file(int user_subdirectory_fd,
+                                   char *name,
+                                   int flags);
 void hardened_shadow_close_file_state(struct hardened_shadow_file_state *state);
-bool hardened_shadow_begin_rewrite_file(const char *path, struct hardened_shadow_file_state *state);
-bool hardened_shadow_end_rewrite_file(const char *path, struct hardened_shadow_file_state *state);
+bool hardened_shadow_begin_rewrite_file(
+    const char *path,
+    struct hardened_shadow_file_state *state);
+bool hardened_shadow_end_rewrite_file(const char *path,
+                                      struct hardened_shadow_file_state *state);
 struct group *hardened_shadow_sgetgrent(char *buf);
 struct passwd *hardened_shadow_sgetpwent(char *buf);
 bool hardened_shadow_replace_file(const char *contents, const char *filename);
-bool hardened_shadow_replace_user_file(const char *username, uid_t uid, const char *contents, const char *filename);
-bool hardened_shadow_update_group_add_user(const char *user_name, const gid_t *groups, size_t groups_length, bool append);
-bool hardened_shadow_update_group_change_user_name(const char *old_name, char *new_name);
+bool hardened_shadow_replace_user_file(const char *username,
+                                       uid_t uid,
+                                       const char *contents,
+                                       const char *filename);
+bool hardened_shadow_update_group_add_user(const char *user_name,
+                                           const gid_t *groups,
+                                           size_t groups_length,
+                                           bool append);
+bool hardened_shadow_update_group_change_user_name(const char *old_name,
+                                                   char *new_name);
 bool hardened_shadow_update_passwd_change_gid(gid_t old_gid, gid_t new_gid);
 bool hardened_shadow_update_passwd_shell_proxy(void);
 bool hardened_shadow_update_passwd_undo_shell_proxy(void);
-bool hardened_shadow_replace_passwd(const char *user_name, struct passwd *replacement_pwd);
-bool hardened_shadow_replace_group(const char *group_name, struct group *replacement_group);
-bool hardened_shadow_create_shadow_entry(const struct passwd *pwd, const struct spwd *spwd, bool system, long inactive_days, long expiredate);
+bool hardened_shadow_replace_passwd(const char *user_name,
+                                    struct passwd *replacement_pwd);
+bool hardened_shadow_replace_group(const char *group_name,
+                                   struct group *replacement_group);
+bool hardened_shadow_create_shadow_entry(const struct passwd *pwd,
+                                         const struct spwd *spwd,
+                                         bool system,
+                                         long inactive_days,
+                                         long expiredate);
 
-bool hardened_shadow_is_nis_line(const char *line);
-bool hardened_shadow_is_valid_username(const char *username);
+bool hardened_shadow_is_valid_user_name(const char *user_name);
 bool hardened_shadow_is_valid_group_name(const char *group_name);
 bool hardened_shadow_is_valid_field_content(const char *content);
 bool hardened_shadow_is_valid_login_shell(const char *shell);
-bool hardened_shadow_parse_key_value(const char *text, char **key, char **value);
-bool hardened_shadow_parse_group_list(const char *text, gid_t **groups, size_t *groups_length);
+bool hardened_shadow_parse_key_value(const char *text,
+                                     char **key,
+                                     char **value);
+bool hardened_shadow_parse_group_list(const char *text,
+                                      gid_t **groups,
+                                      size_t *groups_length);
 bool hardened_shadow_string_to_bool(const char *string, bool *result);
 bool hardened_shadow_string_to_gid(const char *str, gid_t *result);
 
-struct hardened_shadow_lastlog_handle;
-bool hardened_shadow_lastlog_open(struct hardened_shadow_lastlog_handle **handle);
-bool hardened_shadow_lastlog_read(struct hardened_shadow_lastlog_handle **handle, uid_t uid, struct lastlog *entry);
-bool hardened_shadow_lastlog_close(struct hardened_shadow_lastlog_handle **handle);
-
-bool hardened_shadow_asprintf_lastlog(char **result, const char *username, const struct lastlog *entry);
 bool hardened_shadow_asprintf_date(char **result, time_t date);
 bool hardened_shadow_asprintf_password_status(char **result, const char *username);
 bool hardened_shadow_asprintf_shadow(char **result, const struct spwd *spwd);

@@ -57,16 +57,12 @@ bool hardened_shadow_is_valid_field_content(const char *content) {
   return (strspn(content, VALID_FIELD_CHARACTERS) == strlen(content));
 }
 
-bool hardened_shadow_is_nis_line(const char *line) {
-  return line[0] == '+' || line[0] == '-';
-}
-
-bool hardened_shadow_is_valid_username(const char *username) {
-  size_t length = strlen(username);
+bool hardened_shadow_is_valid_user_name(const char *user_name) {
+  size_t length = strlen(user_name);
   if (length == 0 || length > UT_NAMESIZE)
     return false;
 
-  return is_valid_name(username);
+  return is_valid_name(user_name);
 }
 
 bool hardened_shadow_is_valid_group_name(const char *group_name) {

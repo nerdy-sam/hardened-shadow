@@ -256,7 +256,7 @@ static void parse_args(int argc, char **argv) {
     user_name = argv[optind];
     if (getpwnam(user_name))
       errx(EXIT_FAILURE, "user '%s' already exists", user_name);
-    if (!hardened_shadow_is_valid_username(user_name))
+    if (!hardened_shadow_is_valid_user_name(user_name))
       errx(EXIT_FAILURE, "invalid user name '%s'", user_name);
 
     if (flag_home_dir) {

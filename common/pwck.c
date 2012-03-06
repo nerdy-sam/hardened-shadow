@@ -60,7 +60,7 @@ bool hardened_shadow_pwck_passwd(bool read_only, bool quiet) {
 
       // TODO(phajdan.jr): check for duplicates.
 
-      if (!hardened_shadow_is_valid_username(pwd.pw_name)) {
+      if (!hardened_shadow_is_valid_user_name(pwd.pw_name)) {
         result = false;
         warnx("invalid user name '%s'", pwd.pw_name);
       }

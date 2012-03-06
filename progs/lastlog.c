@@ -107,12 +107,69 @@ static void parse_args(int argc, char **argv) {
   }
 }
 
+static bool lastlog_read(FILE *lastlog_file,
+                         const struct stat *sb,
+                         uid_t uid,
+                         struct lastlog *entry) {
+  memset(entry, 0, sizeof(*entry));
+
+  if (!hardened_shadow_umul_ok(uid, sizeof(*entry), SIZE_MAX))
+    return false;
+  size_t offset = uid * sizeof(*entry);
+
+  if (!hardened_shadow_usub_ok(sb->st_size, sizeof(*entry), SIZE_MAX))
+    return false;
+  size_t offset_max = sb->st_size - sizeof(*entry);
+
+  if (offset <= offset_max) {
+    if (!hardened_shadow_scast_ok(offset, OFF_MAX))
+      return false;
+    if (fseeko(lastlog_file, (off_t)offset, SEEK_SET) != 0)
+      return false;
+    if (fread(entry, sizeof(*entry), 1, lastlog_file) != 1)
+      return false;
+  }
+
+  return true;
+}
+
+static bool asprintf_lastlog(char **result,
+                             const char *username,
+                             const struct lastlog *entry) {
+  struct tm *tm = localtime(&entry->ll_time);
+  if (!tm)
+    return false;
+  char ptime[80];
+  if (entry->ll_time == 0)
+    strncpy(ptime, "**Never logged in**", sizeof(ptime) - 1);
+  else
+    strftime(ptime, sizeof(ptime), "%a %b %e %H:%M:%S %z %Y", tm);
+
+  if (asprintf(result,
+               "%-16s %-8.8s %-16.16s %s\n",
+               username,
+               entry->ll_line,
+               entry->ll_host,
+               ptime) == -1) {
+    return false;
+  }
+
+  return true;
+}
+
 int main(int argc, char **argv) {
   parse_args(argc, argv);
 
-  struct hardened_shadow_lastlog_handle* lastlog_handle;
-  if (!hardened_shadow_lastlog_open(&lastlog_handle))
-    errx(EXIT_FAILURE, "hardened_shadow_lastlog_open failed");
+  FILE *lastlog_file = NULL;
+  do {
+    lastlog_file = fopen(_PATH_LASTLOG, "re");
+  } while (!lastlog_file && errno == EINTR);
+  if (!lastlog_file)
+    err(EXIT_FAILURE, "fopen");
+
+  struct stat sb;
+  if (fstat(fileno(lastlog_file), &sb) != 0)
+    err(EXIT_FAILURE, "fstat");
 
   time_t current_time = time(NULL);
 
@@ -124,8 +181,8 @@ int main(int argc, char **argv) {
       continue;
 
     struct lastlog lastlog_entry;
-    if (!hardened_shadow_lastlog_read(&lastlog_handle, pwent->pw_uid, &lastlog_entry))
-      errx(EXIT_FAILURE, "hardened_shadow_lastlog_read failed");
+    if (!lastlog_read(lastlog_file, &sb, pwent->pw_uid, &lastlog_entry))
+      errx(EXIT_FAILURE, "lastlog_read failed");
 
     if (time_days != INTMAX_MAX && current_time - lastlog_entry.ll_time > time_days * 3600 * 24)
       continue;
@@ -133,18 +190,17 @@ int main(int argc, char **argv) {
       continue;
 
     char *printed_entry;
-    if (!hardened_shadow_asprintf_lastlog(&printed_entry, pwent->pw_name, &lastlog_entry))
-      errx(EXIT_FAILURE, "hardened_shadow_asprintf_lastlog failed");
+    if (!asprintf_lastlog(&printed_entry, pwent->pw_name, &lastlog_entry))
+      errx(EXIT_FAILURE, "asprintf_lastlog failed");
     if (!printed_header) {
-      puts(hardened_shadow_lastlog_header);
+      puts("Username         Port     From             Latest");
       printed_header = true;
     }
     printf("%s", printed_entry);
   }
   endpwent();
 
-  if (!hardened_shadow_lastlog_close(&lastlog_handle))
-    errx(EXIT_FAILURE, "hardened_shadow_lastlog_close failed");
+  fclose(lastlog_file);
 
   return EXIT_SUCCESS;
 }

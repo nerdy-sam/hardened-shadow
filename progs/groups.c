@@ -53,11 +53,18 @@ static bool is_on_list(char **list, const char *member) {
 }
 
 static void print_current_groups(void) {
-  gid_t *groups;
-  size_t ngroups;
+  long ngroups_max = sysconf(_SC_NGROUPS_MAX);
+  if (ngroups_max < 0)
+    err(EXIT_FAILURE, "sysconf");
+  if (!hardened_shadow_ucast_ok(ngroups_max, SIZE_MAX))
+    errx(EXIT_FAILURE, "_SC_NGROUPS_MAX is too big");
+  gid_t *groups = hardened_shadow_calloc(ngroups_max, sizeof(gid_t));
+  if (!groups)
+    errx(EXIT_FAILURE, "memory allocation failure");
 
-  if (!hardened_shadow_getgroups(&groups, &ngroups))
-    errx(EXIT_FAILURE, "hardened_shadow_getgroups failed");
+  int ngroups = getgroups(ngroups_max, groups);
+  if (ngroups < 0)
+    err(EXIT_FAILURE, "getgroups failed");
 
   size_t i;
   for (i = 0; i < ngroups; i++) {

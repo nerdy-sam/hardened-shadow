@@ -45,10 +45,8 @@ noinst_LTLIBRARIES = libcommon.la
 libcommon_la_SOURCES = \
 	common/config.c \
 	common/dir.c \
-	common/groups.c \
 	common/hardened-shadow.h \
 	common/file.c \
-	common/lastlog.c \
 	common/misc.c \
 	common/parse.c \
 	common/print.c \
