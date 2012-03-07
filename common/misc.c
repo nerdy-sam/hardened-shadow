@@ -70,76 +70,6 @@ void *hardened_shadow_calloc(size_t nmemb, size_t size) {
   return result;
 }
 
-bool hardened_shadow_strtonum(const char *numstr, intmax_t minval, intmax_t maxval, intmax_t *result) {
-  if (minval > maxval)
-    return false;
-
-  errno = 0;
-  char *ep = NULL;
-  intmax_t imax = strtoimax(numstr, &ep, 0);
-  if (numstr == ep || *ep != '\0' || errno != 0 || imax < minval || imax > maxval)
-    return false;
-
-  *result = imax;
-  return true;
-}
-
-bool hardened_shadow_getrange(const char *range, intmax_t minval, intmax_t maxval, intmax_t *minresult, intmax_t *maxresult) {
-  if (minval > maxval)
-    return false;
-
-  char *dup_range = strdup(range);
-  if (!dup_range)
-    return false;
-
-  bool result = true;
-
-  char *delim = strchr(dup_range, '-');
-  if (!delim) {
-    result = false;
-    goto out;
-  }
-
-  if (delim == dup_range) {
-    *minresult = minval;
-  } else {
-    *delim = '\0';
-    if (!hardened_shadow_strtonum(dup_range, minval, maxval, minresult)) {
-      result = false;
-      goto out;
-    }
-  }
-
-  if (*(delim + 1) == '\0') {
-    *maxresult = maxval;
-  } else {
-    if (!hardened_shadow_strtonum(delim + 1, minval, maxval, maxresult)) {
-      result = false;
-      goto out;
-    }
-  }
-
-out:
-  free(dup_range);
-  return result;
-}
-
-bool hardened_shadow_getday(const char *str, intmax_t *result) {
-  struct tm tp;
-  memset(&tp, '\0', sizeof(tp));
-
-  char *cp = strptime(str, "%Y-%m-%d", &tp);
-  if (!cp || cp[0] != '\0')
-    return false;
-
-  time_t rv = mktime(&tp);
-  if (rv == -1)
-    return false;
-
-  *result = rv / (60 * 60 * 24);
-  return true;
-}
-
 bool hardened_shadow_closefrom(int lowfd) {
   DIR *dirp = opendir("/proc/self/fd");
   if (!dirp)
@@ -183,6 +113,7 @@ bool hardened_shadow_flush_nscd(const char *database) {
   return true;
 }
 
+/* write(2) wrapper that handles partial writes and EINTR correctly. */
 ssize_t hardened_shadow_write(int fd, const char *data, size_t size) {
   size_t total = 0;
   for (ssize_t partial = 0; total < size; total += partial) {
@@ -193,6 +124,7 @@ ssize_t hardened_shadow_write(int fd, const char *data, size_t size) {
   return total;
 }
 
+/* read(2) wrapper that handles partial reads and EINTR correctly. */
 ssize_t hardened_shadow_read(int fd, char *data, size_t size) {
   size_t total = 0;
   for (ssize_t partial = 0; total < size; total += partial) {
@@ -214,28 +146,44 @@ bool hardened_shadow_read_contents(int fd, char **contents, size_t *length) {
   ssize_t bytes_read = -1;
   do {
     bytes_read = TEMP_FAILURE_RETRY(read(fd, buffer, sizeof(buffer)));
-    if (bytes_read < 0) {
-      free(tmp_result);
-      return false;
-    }
-    while ((total_bytes + bytes_read + 1) > total_allocated) {
-      size_t new_allocation = (tmp_result) ? total_allocated * 2 : uintmin(bytes_read + 1, sizeof(buffer));
+    if (bytes_read < 0)
+      goto error;
+
+    /* Calculate size of buffer needed to hold all contents, old and new. */
+    if (!hardened_shadow_uadd_ok(total_bytes, bytes_read, SIZE_MAX))
+      goto error;
+    size_t tmp_read = total_bytes + bytes_read;
+    if (!hardened_shadow_uadd_ok(tmp_read, 1, SIZE_MAX))
+      goto error;
+    tmp_read++;
+
+    /* Allocate large enough buffer. */
+    while (tmp_read > total_allocated) {
+      if (!hardened_shadow_uadd_ok(bytes_read, 1, SIZE_MAX))
+        goto error;
+
+      size_t new_allocation;
+      if (tmp_result)
+        new_allocation = total_allocated * 2;
+      else
+        new_allocation = uintmin(bytes_read + 1, sizeof(buffer));
+
       char *reallocated = realloc(tmp_result, new_allocation);
-      if (!reallocated) {
-        free(tmp_result);
-        return false;
-      }
+      if (!reallocated)
+        goto error;
       tmp_result = reallocated;
       total_allocated = new_allocation;
     }
+
     memcpy(tmp_result + total_bytes, buffer, bytes_read);
     total_bytes += bytes_read;
   } while (bytes_read > 0);
 
   if (total_allocated == 0) {
+    /* Always return a non-NULL pointer, so that callers can be simple. */
     tmp_result = malloc(1);
     if (!tmp_result)
-      return false;
+      goto error;
   }
 
   tmp_result[total_bytes] = '\0';
@@ -243,6 +191,10 @@ bool hardened_shadow_read_contents(int fd, char **contents, size_t *length) {
     *length = total_bytes;
   *contents = tmp_result;
   return true;
+
+error:
+  free(tmp_result);
+  return false;
 }
 
 bool hardened_shadow_copy_file_contents(int in_fd, int out_fd) {
@@ -260,7 +212,6 @@ bool hardened_shadow_copy_file_contents(int in_fd, int out_fd) {
       return false;
   }
 }
-
 
 bool hardened_shadow_getline(FILE* stream, char **result) {
   size_t getline_length;
@@ -321,14 +272,20 @@ static bool get_first_free_gid(gid_t min, gid_t max, gid_t *gid) {
 bool hardened_shadow_allocate_gid(gid_t min, gid_t max, gid_t *gid) {
   if (min > max)
     return false;
+
+  /* Try to allocate GID larger than any existing GID. */
   gid_t candidate = min;
   setgrent();
   struct group *grp = NULL;
   while ((grp = getgrent())) {
     if (grp->gr_gid >= candidate) {
       candidate = grp->gr_gid + 1;
-      if (candidate > max)
+
+      if (candidate > max) {
+        /* Failed to find GID larger than existing GID and still in bounds,
+         * just find any free GID in bounds. */
         return get_first_free_gid(min, max, gid);
+      }
     }
   }
   endgrent();
@@ -391,7 +348,9 @@ bool hardened_shadow_interactive_confirm(const char *prompt) {
   return (line[0] == 'y' || line[0] == 'Y');
 }
 
-bool hardened_shadow_interactive_prompt(const char *prompt, const char *default_value, char **result) {
+bool hardened_shadow_interactive_prompt(const char *prompt,
+                                        const char *default_value,
+                                        char **result) {
   printf("\t%s [%s]: ", prompt, default_value);
   fflush(stdout);
 
@@ -407,20 +366,23 @@ bool hardened_shadow_interactive_prompt(const char *prompt, const char *default_
   return true;
 }
 
-static const char *kLoginShellPreservedEnvironment[] = {
+static const char *kLoginPreservedEnv[] = {
   "TERM",
   "COLORTERM",
   "DISPLAY",
   "XAUTHORITY",
 };
 
-bool hardened_shadow_prepare_environment(const struct environment_options *options) {
+bool hardened_shadow_prepare_environment(
+    const struct environment_options *options) {
   if (!options->preserve_environment) {
-    char* preserved_variables[HARDENED_SHADOW_ARRAYSIZE(kLoginShellPreservedEnvironment)];
+    char* preserved_variables[HARDENED_SHADOW_ARRAYSIZE(kLoginPreservedEnv)];
     if (options->login_shell) {
-      for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(kLoginShellPreservedEnvironment); i++) {
-        if (getenv(kLoginShellPreservedEnvironment[i])) {
-          preserved_variables[i] = strdup(getenv(kLoginShellPreservedEnvironment[i]));
+      for (size_t i = 0;
+           i < HARDENED_SHADOW_ARRAYSIZE(kLoginPreservedEnv);
+           i++) {
+        if (getenv(kLoginPreservedEnv[i])) {
+          preserved_variables[i] = strdup(getenv(kLoginPreservedEnv[i]));
           if (!preserved_variables[i]) {
             hardened_shadow_syslog(LOG_ERR, "memory allocation failure");
             return false;
@@ -435,16 +397,19 @@ bool hardened_shadow_prepare_environment(const struct environment_options *optio
       return false;
     }
     if (options->login_shell) {
-      for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(kLoginShellPreservedEnvironment); i++) {
+      for (size_t i = 0;
+           i < HARDENED_SHADOW_ARRAYSIZE(kLoginPreservedEnv);
+           i++) {
         if (!preserved_variables[i])
           continue;
-        if (setenv(kLoginShellPreservedEnvironment[i], preserved_variables[i], 1) != 0) {
+        if (setenv(kLoginPreservedEnv[i], preserved_variables[i], 1) != 0) {
           hardened_shadow_syslog(LOG_ERR, "setenv failed");
           return false;
         }
         free(preserved_variables[i]);
       }
 
+      /* Figure out an existing homedir, and set $HOME accordingly. */
       if (chdir(options->target_homedir) == 0) {
         if (setenv("HOME", options->target_homedir, 1) != 0) {
           hardened_shadow_syslog(LOG_ERR, "setenv failed");
@@ -457,7 +422,10 @@ bool hardened_shadow_prepare_environment(const struct environment_options *optio
         }
         puts("No directory, logging in with HOME=/");
       } else {
-        hardened_shadow_syslog(LOG_ERR, "unable to cd to `%s' for user `%s'", options->target_homedir, options->target_username);
+        hardened_shadow_syslog(LOG_ERR,
+                               "unable to cd to `%s' for user `%s'",
+                               options->target_homedir,
+                               options->target_username);
         return false;
       }
 
@@ -466,6 +434,8 @@ bool hardened_shadow_prepare_environment(const struct environment_options *optio
         return false;
       }
     } else {
+      /* Not a login shell. */
+
       if (setenv("HOME", options->target_homedir, 1) != 0) {
         hardened_shadow_syslog(LOG_ERR, "setenv failed");
         return false;
@@ -500,10 +470,11 @@ bool hardened_shadow_prepare_environment(const struct environment_options *optio
       env_iter++;
     }
   }
+
   if (setenv("IFS", " \t\n", 1) != 0) {
     hardened_shadow_syslog(LOG_ERR, "setenv failed");
     return false;
   }
+
   return true;
 }
-

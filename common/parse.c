@@ -35,12 +35,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <utmp.h>
 
 static const char VALID_NAME_FIRST_CHARACTERS[] = "abcdefghijklmnopqrstuvwxyz_";
 static const char VALID_NAME_CHARACTERS[]       = "abcdefghijklmnopqrstuvwxyz_-0123456789";
-static const char VALID_FIELD_CHARACTERS[]       = "abcdefghijklmnopqrstuvwxyz_-0123456789/., ";
+static const char VALID_FIELD_CHARACTERS[]      = "abcdefghijklmnopqrstuvwxyz_-0123456789/., ";
 
 static bool is_valid_name(const char *name) {
   size_t length = strlen(name);
@@ -124,7 +125,10 @@ out:
   return result;
 }
 
-bool hardened_shadow_parse_group_list(const char *text, gid_t **groups, size_t *groups_length) {
+/* Converts a comma-separated list of group names or GIDs to an array of gids. */
+bool hardened_shadow_parse_group_list(const char *text,
+                                      gid_t **groups,
+                                      size_t *groups_length) {
   long ngroups_max_sysconf = sysconf(_SC_NGROUPS_MAX);
   if (ngroups_max_sysconf < 1)
     return false;
@@ -201,3 +205,84 @@ bool hardened_shadow_string_to_gid(const char *str, gid_t *result) {
   return true;
 }
 
+bool hardened_shadow_strtonum(const char *numstr,
+                              intmax_t minval,
+                              intmax_t maxval,
+                              intmax_t *result) {
+  if (minval > maxval)
+    return false;
+
+  errno = 0;
+  char *ep = NULL;
+  intmax_t imax = strtoimax(numstr, &ep, 0);
+  if (numstr == ep ||
+      *ep != '\0' ||
+      errno != 0 ||
+      imax < minval ||
+      imax > maxval) {
+    return false;
+  }
+
+  *result = imax;
+  return true;
+}
+
+bool hardened_shadow_getrange(const char *range,
+                              intmax_t minval,
+                              intmax_t maxval,
+                              intmax_t *minresult,
+                              intmax_t *maxresult) {
+  if (minval > maxval)
+    return false;
+
+  char *dup_range = strdup(range);
+  if (!dup_range)
+    return false;
+
+  bool result = true;
+
+  char *delim = strchr(dup_range, '-');
+  if (!delim) {
+    result = false;
+    goto out;
+  }
+
+  if (delim == dup_range) {
+    *minresult = minval;
+  } else {
+    *delim = '\0';
+    if (!hardened_shadow_strtonum(dup_range, minval, maxval, minresult)) {
+      result = false;
+      goto out;
+    }
+  }
+
+  if (*(delim + 1) == '\0') {
+    *maxresult = maxval;
+  } else {
+    if (!hardened_shadow_strtonum(delim + 1, minval, maxval, maxresult)) {
+      result = false;
+      goto out;
+    }
+  }
+
+out:
+  free(dup_range);
+  return result;
+}
+
+bool hardened_shadow_getday(const char *str, intmax_t *result) {
+  struct tm tp;
+  memset(&tp, '\0', sizeof(tp));
+
+  char *cp = strptime(str, "%Y-%m-%d", &tp);
+  if (!cp || cp[0] != '\0')
+    return false;
+
+  time_t rv = mktime(&tp);
+  if (rv == -1)
+    return false;
+
+  *result = rv / (60 * 60 * 24);
+  return true;
+}

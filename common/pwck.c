@@ -78,24 +78,36 @@ bool hardened_shadow_pwck_passwd(bool read_only, bool quiet) {
 
         if (access(pwd.pw_dir, F_OK) != 0) {
           result = false;
-          warnx("user '%s': directory '%s' does not exist", pwd.pw_name, pwd.pw_dir);
+          warnx("user '%s': directory '%s' does not exist",
+                pwd.pw_name,
+                pwd.pw_dir);
         }
 
         if (access(pwd.pw_shell, F_OK) != 0) {
           result = false;
-          warnx("user '%s': program '%s' does not exist", pwd.pw_name, pwd.pw_shell);
+          warnx("user '%s': program '%s' does not exist",
+                pwd.pw_name,
+                pwd.pw_shell);
         }
       }
 
       if (!getspnam(pwd.pw_name)) {
         result = false;
         warnx("no shadow entry for '%s'", pwd.pw_name);
-        if (!read_only && hardened_shadow_interactive_confirm("add missing entry?")) {
+        if (!read_only &&
+            hardened_shadow_interactive_confirm("add missing entry?")) {
           intmax_t system_min, system_max;
-          if (hardened_shadow_config_get_range("SYSTEM_UID_RANGE", &system_min, &system_max)) {
+          if (hardened_shadow_config_get_range("SYSTEM_UID_RANGE",
+                                               &system_min,
+                                               &system_max)) {
             bool system = pwd.pw_uid >= system_min && pwd.pw_uid <= system_max;
-            if (!hardened_shadow_create_shadow_entry(&pwd, NULL, system, -1, -1))
+            if (!hardened_shadow_create_shadow_entry(&pwd,
+                                                     NULL,
+                                                     system,
+                                                     -1,
+                                                     -1)) {
               warnx("adding shadow entry failed");
+            }
           } else {
             warnx("failed to retrieve SYSTEM_UID_RANGE");
           }

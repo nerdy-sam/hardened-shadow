@@ -54,7 +54,10 @@ bool hardened_shadow_umul_ok(uintmax_t a, uintmax_t b, uintmax_t max) {
   return a <= max / b;
 }
 
-bool hardened_shadow_sadd_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max) {
+bool hardened_shadow_sadd_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max) {
   if (a > max || b > max || a < min || b < min)
     return false;
   if (b > 0 && a > (max - b))
@@ -64,7 +67,10 @@ bool hardened_shadow_sadd_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max)
   return true;
 }
 
-bool hardened_shadow_ssub_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max) {
+bool hardened_shadow_ssub_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max) {
   if (a > max || b > max || a < min || b < min)
     return false;
   if (b > 0 && a < (min + b))
@@ -74,7 +80,10 @@ bool hardened_shadow_ssub_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max)
   return true;
 }
 
-bool hardened_shadow_smul_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max) {
+bool hardened_shadow_smul_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max) {
   if (a > max || b > max || a < min || b < min)
     return false;
   if (a > 0) {
@@ -91,7 +100,10 @@ bool hardened_shadow_smul_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max)
   return true;
 }
 
-bool hardened_shadow_sdiv_ok(intmax_t a, intmax_t b, intmax_t min, intmax_t max) {
+bool hardened_shadow_sdiv_ok(intmax_t a,
+                             intmax_t b,
+                             intmax_t min,
+                             intmax_t max) {
   if (a > max || b > max || a < min || b < min)
     return false;
   if (b == 0)

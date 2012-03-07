@@ -61,7 +61,8 @@ bool hardened_shadow_asprintf_date(char **result, time_t date) {
   return true;
 }
 
-bool hardened_shadow_asprintf_password_status(char **result, const char *username) {
+bool hardened_shadow_asprintf_password_status(char **result,
+                                              const char *username) {
   struct spwd *sp = getspnam(username);
   if (sp) {
     static char buf[80];
