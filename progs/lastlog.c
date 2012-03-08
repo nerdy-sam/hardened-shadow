@@ -92,8 +92,11 @@ static void parse_args(int argc, char **argv) {
         if (pwent) {
           uid_min = uid_max = pwent->pw_uid;
         } else {
-          if (!hardened_shadow_getrange(optarg, 0, INTMAX_MAX, &uid_min, &uid_max))
+          if (!hardened_shadow_getrange(optarg,
+                                        0, INTMAX_MAX,
+                                        &uid_min, &uid_max)) {
             errx(EXIT_FAILURE, "hardened_shadow_getrange failed");
+          }
         }
         break;
       default:
@@ -184,9 +187,11 @@ int main(int argc, char **argv) {
     if (!lastlog_read(lastlog_file, &sb, pwent->pw_uid, &lastlog_entry))
       errx(EXIT_FAILURE, "lastlog_read failed");
 
-    if (time_days != INTMAX_MAX && current_time - lastlog_entry.ll_time > time_days * 3600 * 24)
+    if (time_days != INTMAX_MAX &&
+        current_time - lastlog_entry.ll_time > time_days * 3600 * 24)
       continue;
-    if (before_days != 0 && current_time - lastlog_entry.ll_time < before_days * 3600 * 24)
+    if (before_days != 0 &&
+        current_time - lastlog_entry.ll_time < before_days * 3600 * 24)
       continue;
 
     char *printed_entry;

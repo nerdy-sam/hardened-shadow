@@ -93,8 +93,10 @@ static void parse_args(int argc, char **argv) {
     usage();
 
   if (optind < argc) {
+    /* Use user name passed in command line. */
     target_user = strdup(argv[optind]);
   } else {
+    /* Change current user's shell. */
     struct passwd *pwdent = getpwuid(getuid());
     if (!pwdent)
       errx(EXIT_FAILURE, "Cannot determine your user name.");
@@ -163,6 +165,8 @@ int main(int argc, char **argv) {
     if (!hardened_shadow_is_valid_login_shell(pwdent->pw_shell))
       errx(EXIT_FAILURE, "You may not change the shell for '%s'.", target_user);
   }
+
+  /* Determine current shell (will be used as a default in interactive mode). */
   char *default_shell = NULL;
   if (update_passwd) {
     default_shell = strdup(pwdent->pw_shell);
@@ -172,7 +176,8 @@ int main(int argc, char **argv) {
     int user_fd = hardened_shadow_open_user_directory(target_user);
     if (user_fd < 0)
       errx(EXIT_FAILURE, "hardened_shadow_open_user_directory failed");
-    int shell_fd = hardened_shadow_open_user_file(user_fd, "shell", O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW);
+    int shell_fd = hardened_shadow_open_user_file(
+        user_fd, "shell", O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW);
     if (shell_fd < 0)
       errx(EXIT_FAILURE, "hardened_shadow_open_user_file failed");
     if (!hardened_shadow_read_contents(shell_fd, &default_shell, NULL))
@@ -185,15 +190,19 @@ int main(int argc, char **argv) {
   if (!target_shell) {
     printf("Changing the login shell for %s\n", target_user);
     puts("Enter the new value, or press ENTER for the default\n");
-    if (!hardened_shadow_interactive_prompt("Login Shell", default_shell, &target_shell))
+    if (!hardened_shadow_interactive_prompt("Login Shell", default_shell,
+                                            &target_shell)) {
       errx(EXIT_FAILURE, "Failed to get the response.");
+    }
   }
 
   if (!update_passwd) {
-    char *shell_proxy = realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
+    char *shell_proxy =
+        realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
     if (!shell_proxy)
       errx(EXIT_FAILURE, "memory allocation failure");
 
+    /* Prevent an infinite loop: shell_proxy launching shell_proxy. */
     int rv = strcmp(shell_proxy, target_shell);
     free(shell_proxy);
     if (rv == 0)
@@ -215,8 +224,10 @@ int main(int argc, char **argv) {
       errx(EXIT_FAILURE, "Failed to change shell.");
     hardened_shadow_flush_nscd("passwd");
   } else {
-    if (!hardened_shadow_replace_user_file(target_user, target_uid, target_shell, "shell"))
+    if (!hardened_shadow_replace_user_file(target_user, target_uid,
+                                           target_shell, "shell")) {
       errx(EXIT_FAILURE, "Failed to change shell.");
+    }
   }
 
   return EXIT_SUCCESS;

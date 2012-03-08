@@ -109,7 +109,10 @@ static bool recursively_remove_path(const char *path) {
     if (!hardened_shadow_drop_priv(user_name, user_uid, user_gid))
       _exit(EXIT_FAILURE);
 
-    _exit(hardened_shadow_remove_dir_contents(path) ? EXIT_SUCCESS : EXIT_FAILURE);
+    if (!hardened_shadow_remove_dir_contents(path))
+      _exit(EXIT_FAILURE);
+
+    _exit(EXIT_SUCCESS);
   }
 
   int status;
@@ -156,8 +159,10 @@ int main(int argc, char **argv) {
   parse_args(argc, argv);
 
   bool user_private_groups;
-  if (!hardened_shadow_config_get_bool("USER_PRIVATE_GROUPS", &user_private_groups))
+  if (!hardened_shadow_config_get_bool("USER_PRIVATE_GROUPS",
+                                       &user_private_groups)) {
     errx(EXIT_FAILURE, "failed to retrieve USER_PRIVATE_GROUPS setting");
+  }
 
   const char *userdel_command = NULL;
   if (!hardened_shadow_config_get_path("USERDEL_COMMAND", &userdel_command))
@@ -210,7 +215,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  /* Note: preserve exact wording of syslog messages from shadow-utils where possible. */
+  /* Note: preserve exact wording of syslog messages from shadow-utils
+   * where possible. */
   hardened_shadow_syslog(LOG_INFO, "delete user '%s'", user_name);
 
   if (flag_remove && !recursively_remove_path(user_home))

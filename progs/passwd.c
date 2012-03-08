@@ -123,8 +123,10 @@ static void parse_args(int argc, char **argv) {
         has_nonstatus_flag = true;
         break;
       case 'i':
-        if (!hardened_shadow_strtonum(optarg, -1, INTMAX_MAX, &flag_inactive_days))
+        if (!hardened_shadow_strtonum(optarg, -1, INTMAX_MAX,
+                                      &flag_inactive_days)) {
           errx(EXIT_FAILURE, "invalid inactive days argument");
+        }
         has_nonstatus_flag = true;
         break;
       case 'k':
@@ -193,8 +195,11 @@ static void parse_args(int argc, char **argv) {
   struct passwd *pw = getpwnam(target_username);
   if (!pw)
     err(EXIT_FAILURE, "Cannot determine user name.");
-  if (pw->pw_uid != getuid() && getuid() != 0)
-    errx(EXIT_FAILURE, "You may not view or modify password information for %s.", target_username);
+  if (pw->pw_uid != getuid() && getuid() != 0) {
+    errx(EXIT_FAILURE,
+         "You may not view or modify password information for %s.",
+         target_username);
+  }
   target_uid = pw->pw_uid;
 }
 
@@ -223,7 +228,8 @@ static void handle_change_password(void) {
     NULL
   };
   pam_handle_t *pam_handle = NULL;
-  int pam_rv = pam_start("passwd", target_username, &pam_conversation, &pam_handle);
+  int pam_rv = pam_start("passwd", target_username,
+                         &pam_conversation, &pam_handle);
   if (pam_rv != PAM_SUCCESS)
     errx(EXIT_FAILURE, "pam_start() failed, error %d", pam_rv);
 
@@ -279,11 +285,13 @@ static bool update_expiry(void) {
     goto out;
   }
 
-  if (!hardened_shadow_replace_user_file(target_username, target_uid, shadow_contents, "shadow")) {
+  if (!hardened_shadow_replace_user_file(target_username, target_uid,
+                                         shadow_contents, "shadow")) {
     result = false;
     goto out;
   }
-  if (!hardened_shadow_replace_user_file(target_username, target_uid, aging_contents, "aging")) {
+  if (!hardened_shadow_replace_user_file(target_username, target_uid,
+                                         aging_contents, "aging")) {
     result = false;
     goto out;
   }

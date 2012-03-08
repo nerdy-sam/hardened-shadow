@@ -145,7 +145,8 @@ static void parse_args(int argc, char **argv) {
   };
 
   int c;
-  while ((c = getopt_long(argc, argv, "b:c:d:De:f:g:G:k:lmMNop:rs:u:U", long_options, NULL)) != -1) {
+  while ((c = getopt_long(argc, argv, "b:c:d:De:f:g:G:k:lmMNop:rs:u:U",
+                          long_options, NULL)) != -1) {
     switch (c) {
       case 'b':
         if (!hardened_shadow_is_valid_field_content(optarg) || optarg[0] != '/')
@@ -180,8 +181,10 @@ static void parse_args(int argc, char **argv) {
         break;
       case 'G':
         flag_groups = optarg;
-        if (!hardened_shadow_parse_group_list(flag_groups, &user_groups, &user_ngroups))
+        if (!hardened_shadow_parse_group_list(flag_groups, &user_groups,
+                                              &user_ngroups)) {
           errx(EXIT_FAILURE, "invalid group list '%s'", flag_groups);
+        }
         break;
       case 'h':
         usage();
@@ -228,8 +231,10 @@ static void parse_args(int argc, char **argv) {
   }
 
   if (!flag_gid && !flag_no_user_group && !flag_user_group) {
-    if (!hardened_shadow_config_get_bool("USER_PRIVATE_GROUPS", &flag_user_group))
+    if (!hardened_shadow_config_get_bool("USER_PRIVATE_GROUPS",
+                                         &flag_user_group)) {
       errx(EXIT_FAILURE, "failed to retrieve USER_PRIVATE_GROUPS setting");
+    }
   }
 
   if (flag_non_unique && flag_uid == FLAG_NOT_SET)
@@ -247,8 +252,14 @@ static void parse_args(int argc, char **argv) {
     if (optind != argc)
       usage();
 
-    if (flag_uid || flag_non_unique || flag_groups || flag_home_dir || flag_comment || flag_create_home)
+    if (flag_uid ||
+        flag_non_unique ||
+        flag_groups ||
+        flag_home_dir ||
+        flag_comment ||
+        flag_create_home) {
       usage();
+    }
   } else {
     if (optind != argc - 1)
       usage();
@@ -289,8 +300,12 @@ static void parse_args(int argc, char **argv) {
   if (flag_no_create_home)
     flag_create_home = false;
 
-  if (flag_user_group && getgrnam(user_name))
-    errx(EXIT_FAILURE, "group %s exists - if you want to add this user to that group, use -g.", user_name);
+  if (flag_user_group && getgrnam(user_name)) {
+    errx(EXIT_FAILURE,
+         "group %s exists - "
+         "if you want to add this user to that group, use -g.",
+         user_name);
+  }
 }
 
 static bool read_defaults_file(void) {
@@ -327,8 +342,10 @@ static bool read_defaults_file(void) {
           errx(EXIT_FAILURE, "invalid numeric argument '%s'", defaults_line);
         free(value);
       } else if (strcmp("EXPIRE", key) == 0) {
-        if (value[0] != '\0' && !hardened_shadow_getday(value, &default_expiredate))
+        if (value[0] != '\0' &&
+            !hardened_shadow_getday(value, &default_expiredate)) {
           errx(EXIT_FAILURE, "invalid date '%s'", defaults_line);
+        }
         free(value);
       } else if (strcmp("SKEL", key) == 0) {
         default_skel = value;
@@ -397,6 +414,18 @@ static bool set_defaults(void) {
     return false;
   }
 
+  long long inactive;
+  if (flag_inactive == FLAG_NOT_SET)
+    inactive = default_inactive;
+  else
+    inactive = flag_inactive;
+
+  long long expiredate;
+  if (flag_expiredate == FLAG_NOT_SET)
+    expiredate = default_expiredate;
+  else
+    expiredate = flag_expiredate;
+
   bool result = true;
 
   bool written_group = false;
@@ -411,35 +440,37 @@ static bool set_defaults(void) {
     char *defaults_line = NULL;
     while (hardened_shadow_getline(defaults_file, &defaults_line)) {
       if (hardened_shadow_starts_with(defaults_line, "GROUP=")) {
-        if (fprintf(output_stream, "GROUP=%s\n", flag_gid ? flag_gid : default_gid) < 0) {
+        if (fprintf(output_stream, "GROUP=%s\n",
+                    flag_gid ? flag_gid : default_gid) < 0) {
           warn("fprintf");
           result = false;
           goto out;
         }
         written_group = true;
       } else if (hardened_shadow_starts_with(defaults_line, "HOME=")) {
-        if (fprintf(output_stream, "HOME=%s\n", flag_base_dir ? flag_base_dir : default_home_dir) < 0) {
+        if (fprintf(output_stream, "HOME=%s\n",
+                    flag_base_dir ? flag_base_dir : default_home_dir) < 0) {
           warn("fprintf");
           result = false;
           goto out;
         }
         written_home = true;
       } else if (hardened_shadow_starts_with(defaults_line, "SHELL=")) {
-        if (fprintf(output_stream, "SHELL=%s\n", flag_shell ? flag_shell : default_shell) < 0) {
+        if (fprintf(output_stream, "SHELL=%s\n",
+                    flag_shell ? flag_shell : default_shell) < 0) {
           warn("fprintf");
           result = false;
           goto out;
         }
         written_shell = true;
       } else if (hardened_shadow_starts_with(defaults_line, "INACTIVE=")) {
-        if (fprintf(output_stream, "INACTIVE=%lld\n", (flag_inactive == FLAG_NOT_SET) ? default_inactive : flag_inactive) < 0) {
+        if (fprintf(output_stream, "INACTIVE=%lld\n", inactive) < 0) {
           warn("fprintf");
           result = false;
           goto out;
         }
         written_inactive = true;
       } else if (hardened_shadow_starts_with(defaults_line, "EXPIRE=")) {
-        long long expiredate = (flag_expiredate == FLAG_NOT_SET) ? default_expiredate : flag_expiredate;
         int rc = -1;
         if (expiredate == -1)
           rc = fprintf(output_stream, "EXPIRE=\n");
@@ -452,7 +483,8 @@ static bool set_defaults(void) {
         }
         written_expiredate = true;
       } else if (hardened_shadow_starts_with(defaults_line, "SKEL=")) {
-        if (fprintf(output_stream, "SKEL=%s\n", flag_skel ? flag_skel : default_skel) < 0) {
+        if (fprintf(output_stream, "SKEL=%s\n",
+                    flag_skel ? flag_skel : default_skel) < 0) {
           warn("fprintf");
           result = false;
           goto out;
@@ -470,28 +502,34 @@ static bool set_defaults(void) {
       goto out;
     }
   }
-  if (!written_group && fprintf(output_stream, "GROUP=%s\n", flag_gid ? flag_gid : default_gid) < 0) {
+  if (!written_group &&
+      fprintf(output_stream, "GROUP=%s\n",
+              flag_gid ? flag_gid : default_gid) < 0) {
     warn("fprintf");
     result = false;
     goto out;
   }
-  if (!written_home && fprintf(output_stream, "HOME=%s\n", flag_base_dir ? flag_base_dir : default_home_dir) < 0) {
+  if (!written_home &&
+      fprintf(output_stream, "HOME=%s\n",
+              flag_base_dir ? flag_base_dir : default_home_dir) < 0) {
     warn("fprintf");
     result = false;
     goto out;
   }
-  if (!written_shell && fprintf(output_stream, "SHELL=%s\n", flag_shell ? flag_shell : default_shell) < 0) {
+  if (!written_shell &&
+      fprintf(output_stream, "SHELL=%s\n",
+              flag_shell ? flag_shell : default_shell) < 0) {
     warn("fprintf");
     result = false;
     goto out;
   }
-  if (!written_inactive && fprintf(output_stream, "INACTIVE=%lld\n", (flag_inactive == FLAG_NOT_SET) ? default_inactive : flag_inactive) < 0) {
+  if (!written_inactive &&
+      fprintf(output_stream, "INACTIVE=%lld\n", inactive) < 0) {
     warn("fprintf");
     result = false;
     goto out;
   }
   if (!written_expiredate) {
-    long long expiredate = (flag_expiredate == FLAG_NOT_SET) ? default_expiredate : flag_expiredate;
     int rc = -1;
     if (expiredate == -1)
       rc = fprintf(output_stream, "EXPIRE=\n");
@@ -503,7 +541,9 @@ static bool set_defaults(void) {
       goto out;
     }
   }
-  if (!written_skel && fprintf(output_stream, "SKEL=%s\n", flag_skel ? flag_skel : default_skel) < 0) {
+  if (!written_skel &&
+      fprintf(output_stream, "SKEL=%s\n",
+              flag_skel ? flag_skel : default_skel) < 0) {
     warn("fprintf");
     result = false;
     goto out;
@@ -539,7 +579,11 @@ out:
 }
 
 static bool handle_flag_defaults(void) {
-  if (flag_gid || flag_base_dir || flag_inactive != FLAG_NOT_SET || flag_expiredate != FLAG_NOT_SET || flag_shell) {
+  if (flag_gid ||
+      flag_base_dir ||
+      flag_inactive != FLAG_NOT_SET ||
+      flag_expiredate != FLAG_NOT_SET ||
+      flag_shell) {
     return set_defaults();
   } else {
     return show_defaults();
@@ -582,9 +626,9 @@ static void determine_uid_gid(void) {
     user_uid = flag_uid;
   } else {
     if (flag_uid == FLAG_NOT_SET) {
-      const char *uid_key = (flag_system) ? "SYSTEM_UID_RANGE" : "USER_UID_RANGE";
+      const char *key = (flag_system) ? "SYSTEM_UID_RANGE" : "USER_UID_RANGE";
       intmax_t uid_min, uid_max;
-      if (!hardened_shadow_config_get_range(uid_key, &uid_min, &uid_max))
+      if (!hardened_shadow_config_get_range(key, &uid_min, &uid_max))
         errx(EXIT_FAILURE, "Failed to retrieve UID range.");
       if (!allocate_uid(uid_min, uid_max, &user_uid))
         errx(EXIT_FAILURE, "Failed to allocate UID.");
@@ -602,8 +646,11 @@ static void determine_uid_gid(void) {
     if (!hardened_shadow_config_get_range(gid_key, &gid_min, &gid_max))
       errx(EXIT_FAILURE, "Failed to retrieve GID range.");
 
-    if (user_uid < gid_min || user_uid > gid_max)
-      errx(EXIT_FAILURE, "User UID is not within valid GID range %ju vs. (%ju-%ju)", (uintmax_t)user_uid, (uintmax_t)gid_min, (uintmax_t)gid_max);
+    if (user_uid < gid_min || user_uid > gid_max) {
+      errx(EXIT_FAILURE,
+           "User UID is not within valid GID range %ju vs. (%ju-%ju)",
+           (uintmax_t)user_uid, (uintmax_t)gid_min, (uintmax_t)gid_max);
+    }
 
     if (getgrgid(user_uid)) {
       if (!hardened_shadow_allocate_gid(gid_min, gid_max, &user_gid))
@@ -647,8 +694,10 @@ static void initialize_lastlog(void) {
 
   if (lseek(fd, offset, SEEK_SET) != offset)
     err(EXIT_FAILURE, "lseek");
-  if (hardened_shadow_write(fd, (const char *)&lastlog_entry, sizeof(lastlog_entry)) != sizeof(lastlog_entry))
+  if (hardened_shadow_write(fd, (const char *)&lastlog_entry,
+                            sizeof(lastlog_entry)) != sizeof(lastlog_entry)) {
     errx(EXIT_FAILURE, "hardened_shadow_write failed");
+  }
   if (fsync(fd) != 0)
     err(EXIT_FAILURE, "fsync");
 
@@ -705,8 +754,10 @@ static void create_home_dir(void) {
     err(EXIT_FAILURE, "chown");
 
   const char *skel_dir = (flag_skel) ? flag_skel : default_skel;
-  if (!hardened_shadow_copy_dir_contents(skel_dir, user_home_dir, user_uid, user_gid) != 0)
+  if (!hardened_shadow_copy_dir_contents(skel_dir, user_home_dir,
+                                         user_uid, user_gid)) {
     errx(EXIT_FAILURE, "hardened_shadow_copy_dir_contents failed");
+  }
 }
 
 static void create_mail_spool(void) {
@@ -739,7 +790,8 @@ static void create_mail_spool(void) {
 }
 
 static void create_account(void) {
-  char *shell_proxy = realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
+  char *shell_proxy =
+      realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
   if (!shell_proxy)
     errx(EXIT_FAILURE, "memory allocation failure");
 
@@ -752,7 +804,13 @@ static void create_account(void) {
   pwd.pw_gid = user_gid;
   pwd.pw_gecos = (flag_comment) ? flag_comment : "";
   pwd.pw_dir = user_home_dir;
-  pwd.pw_shell = (hardened_shadow_is_valid_login_shell(target_shell)) ? shell_proxy : target_shell;
+
+  /* Use shell_proxy if possible, so that the user can choose
+   * and change his preferred shell. */
+  if (hardened_shadow_is_valid_login_shell(target_shell))
+    pwd.pw_shell = shell_proxy;
+  else
+    pwd.pw_shell = target_shell;
 
   /* Send a log message now, for consistency with shadow-utils. */
   hardened_shadow_syslog(LOG_INFO,
@@ -766,12 +824,21 @@ static void create_account(void) {
 
   if (!hardened_shadow_replace_passwd(user_name, &pwd))
     errx(EXIT_FAILURE, "hardened_shadow_replace_passwd failed");
-  if (user_groups && !hardened_shadow_update_group_add_user(user_name, user_groups, user_ngroups, true))
+  if (user_groups &&
+      !hardened_shadow_update_group_add_user(user_name,
+                                             user_groups, user_ngroups, true)) {
     errx(EXIT_FAILURE, "hardened_shadow_update_group_add_user failed");
-  if (!hardened_shadow_create_shadow_entry(&pwd, NULL, flag_system, flag_inactive == FLAG_NOT_SET ? -1 : flag_inactive, flag_expiredate == FLAG_NOT_SET ? -1 : flag_expiredate))
+  }
+  if (!hardened_shadow_create_shadow_entry(
+          &pwd, NULL, flag_system,
+          flag_inactive == FLAG_NOT_SET ? -1 : flag_inactive,
+          flag_expiredate == FLAG_NOT_SET ? -1 : flag_expiredate)) {
     errx(EXIT_FAILURE, "hardened_shadow_create_shadow_entry failed");
-  if (!hardened_shadow_replace_user_file(user_name, user_uid, target_shell, "shell"))
+  }
+  if (!hardened_shadow_replace_user_file(user_name, user_uid,
+                                         target_shell, "shell")) {
     errx(EXIT_FAILURE, "hardened_shadow_replace_user_file failed");
+  }
 }
 
 int main(int argc, char **argv) {

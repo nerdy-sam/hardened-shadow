@@ -147,19 +147,41 @@ int main(int argc, char **argv) {
 
   if (!hardened_shadow_replace_group(group_name, &grp))
     errx(EXIT_FAILURE, "Failed to update /etc/group.");
-  if (flag_gid != (gid_t)-1 && flag_new_name)
-    hardened_shadow_syslog(LOG_INFO, "group changed in /etc/group (group %s/%ju), new name: %s, new gid: %ju", group_name, (uintmax_t)original_gid, flag_new_name, (uintmax_t)flag_gid);
-  else if (flag_gid != (gid_t)-1)
-    hardened_shadow_syslog(LOG_INFO, "group changed in /etc/group (group %s/%ju), new gid: %ju", group_name, (uintmax_t)original_gid, (uintmax_t)flag_gid);
-  else if (flag_new_name)
-    hardened_shadow_syslog(LOG_INFO, "group changed in /etc/group (group %s/%ju), new name: %s", group_name, (uintmax_t)original_gid, flag_new_name);
+
+  if (flag_gid != (gid_t)-1 && flag_new_name) {
+    hardened_shadow_syslog(LOG_INFO,
+                           "group changed in /etc/group (group %s/%ju), "
+                           "new name: %s, new gid: %ju",
+                           group_name, (uintmax_t)original_gid,
+                           flag_new_name, (uintmax_t)flag_gid);
+  } else if (flag_gid != (gid_t)-1) {
+    hardened_shadow_syslog(LOG_INFO,
+                           "group changed in /etc/group (group %s/%ju), "
+                           "new gid: %ju",
+                           group_name, (uintmax_t)original_gid,
+                           (uintmax_t)flag_gid);
+  } else if (flag_new_name) {
+    hardened_shadow_syslog(LOG_INFO,
+                           "group changed in /etc/group (group %s/%ju), "
+                           "new name: %s",
+                           group_name, (uintmax_t)original_gid,
+                           flag_new_name);
+  }
 
   if (flag_gid != (gid_t)-1) {
     if (!hardened_shadow_update_passwd_change_gid(original_gid, flag_gid)) {
-      hardened_shadow_syslog(LOG_WARNING, "failed to update /etc/passwd when changing group %s/%ju gid to %ju", group_name, (uintmax_t)original_gid, (uintmax_t)flag_gid);
+      hardened_shadow_syslog(LOG_WARNING,
+                             "failed to update /etc/passwd "
+                             "when changing group %s/%ju gid to %ju",
+                             group_name, (uintmax_t)original_gid,
+                             (uintmax_t)flag_gid);
       errx(EXIT_FAILURE, "Failed to update /etc/passwd.");
     }
-    hardened_shadow_syslog(LOG_INFO, "group changed in /etc/passwd (group %s/%ju), new gid: %ju", group_name, (uintmax_t)original_gid, (uintmax_t)flag_gid);
+    hardened_shadow_syslog(LOG_INFO,
+                           "group changed in /etc/passwd (group %s/%ju), "
+                           "new gid: %ju",
+                           group_name, (uintmax_t)original_gid,
+                           (uintmax_t)flag_gid);
   }
 
   hardened_shadow_flush_nscd("group");

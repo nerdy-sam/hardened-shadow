@@ -56,7 +56,9 @@ static bool user_preauthenticated = false;
 static bool preserve_environment = false;
 
 static void login_fatal() {
-  hardened_shadow_syslog(LOG_NOTICE, "FAILED login for %s", target_username ? target_username : "UNKNOWN");
+  hardened_shadow_syslog(LOG_NOTICE,
+                         "FAILED login for %s",
+                         target_username ? target_username : "UNKNOWN");
   errx(EXIT_FAILURE, "Authentication failure");
 }
 
@@ -95,7 +97,7 @@ static void parse_args(int argc, char **argv) {
     target_username = argv[optind];
 
   if (user_preauthenticated && !target_username)
-    usage ();
+    usage();
 }
 
 static void setup_tty(void) {
@@ -121,9 +123,10 @@ static int chown_tty(uid_t uid, const char *username) {
 
   if ((fchown (STDIN_FILENO, uid, tty_group->gr_gid) != 0) ||
       (fchmod (STDIN_FILENO, 0600) != 0)) {
-    hardened_shadow_syslog(LOG_ERR,
-                           "unable to change owner or mode of tty stdin for user `%s': %s\n",
-                           username, strerror(errno));
+    hardened_shadow_syslog(
+        LOG_ERR,
+        "unable to change owner or mode of tty stdin for user `%s': %s\n",
+        username, strerror(errno));
     return PAM_ABORT;
   }
 
@@ -155,8 +158,11 @@ int main(int argc, char **argv) {
 
   parse_args(argc, argv);
 
-  if (isatty(STDIN_FILENO) == 0 || isatty(STDOUT_FILENO) == 0 || isatty(STDERR_FILENO) == 0)
+  if (isatty(STDIN_FILENO) == 0 ||
+      isatty(STDOUT_FILENO) == 0 ||
+      isatty(STDERR_FILENO) == 0) {
     errx(EXIT_FAILURE, "Must be used from a terminal");
+  }
 
   setup_tty();
 
@@ -169,7 +175,8 @@ int main(int argc, char **argv) {
     NULL
   };
   pam_handle_t *pam_handle = NULL;
-  int pam_rv = pam_start("login", target_username, &pam_conversation, &pam_handle);
+  int pam_rv = pam_start("login", target_username,
+                         &pam_conversation, &pam_handle);
   if (pam_rv != PAM_SUCCESS) {
     hardened_shadow_syslog(LOG_ERR, "pam_start: error %d", pam_rv);
     login_fatal();
@@ -177,19 +184,22 @@ int main(int argc, char **argv) {
 
   pam_rv = pam_set_item(pam_handle, PAM_RHOST, hostname);
   if (pam_rv != PAM_SUCCESS) {
-    hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s", pam_strerror(pam_handle, pam_rv));
+    hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s",
+                           pam_strerror(pam_handle, pam_rv));
     goto pam_cleanup;
   }
 
   pam_rv = pam_set_item(pam_handle, PAM_TTY, ttyname(STDIN_FILENO));
   if (pam_rv != PAM_SUCCESS) {
-    hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s", pam_strerror(pam_handle, pam_rv));
+    hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s",
+                           pam_strerror(pam_handle, pam_rv));
     goto pam_cleanup;
   }
 
   pam_rv = pam_fail_delay(pam_handle, 1000000);
   if (pam_rv != PAM_SUCCESS) {
-    hardened_shadow_syslog(LOG_ERR, "pam_fail_delay: %s", pam_strerror(pam_handle, pam_rv));
+    hardened_shadow_syslog(LOG_ERR, "pam_fail_delay: %s",
+                           pam_strerror(pam_handle, pam_rv));
     goto pam_cleanup;
   }
 
@@ -197,50 +207,61 @@ int main(int argc, char **argv) {
     char local_hostname[256];
     char login_prompt[512];
     if (gethostname(local_hostname, sizeof(local_hostname)) == 0) {
-      snprintf(login_prompt, sizeof(login_prompt), "%s login: ", local_hostname);
+      snprintf(login_prompt, sizeof(login_prompt),
+               "%s login: ", local_hostname);
     } else {
       strncpy(login_prompt, "login:", sizeof(login_prompt));
     }
 
     pam_rv = pam_set_item(pam_handle, PAM_USER_PROMPT, login_prompt);
     if (pam_rv != PAM_SUCCESS) {
-      hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s", pam_strerror(pam_handle, pam_rv));
+      hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s",
+                             pam_strerror(pam_handle, pam_rv));
       goto pam_cleanup;
     }
 
     pam_rv = get_pam_user(pam_handle, &pam_user);
     if (pam_rv != PAM_SUCCESS) {
-      hardened_shadow_syslog(LOG_ERR, "get_pam_user: %s", pam_strerror(pam_handle, pam_rv));
+      hardened_shadow_syslog(LOG_ERR, "get_pam_user: %s",
+                             pam_strerror(pam_handle, pam_rv));
       goto pam_cleanup;
     }
     if (pam_user && pam_user[0] == '\0') {
       pam_rv = pam_set_item(pam_handle, PAM_USER, NULL);
       if (pam_rv != PAM_SUCCESS) {
-        hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s", pam_strerror(pam_handle, pam_rv));
+        hardened_shadow_syslog(LOG_ERR, "pam_set_item: %s",
+                               pam_strerror(pam_handle, pam_rv));
         goto pam_cleanup;
       }
     }
 
     int pam_authenticate_rv = pam_authenticate(pam_handle, 0);
     if (pam_authenticate_rv != PAM_SUCCESS) {
-      hardened_shadow_syslog(LOG_ERR, "pam_authenticate: %s", pam_strerror(pam_handle, pam_authenticate_rv));
+      hardened_shadow_syslog(LOG_ERR, "pam_authenticate: %s",
+                             pam_strerror(pam_handle, pam_authenticate_rv));
       pam_rv = pam_authenticate_rv;
       goto pam_cleanup;
     }
 
     pam_rv = get_pam_user(pam_handle, &pam_user);
     if (pam_rv != PAM_SUCCESS) {
-      hardened_shadow_syslog(LOG_ERR, "get_pam_user: %s", pam_strerror(pam_handle, pam_rv));
+      hardened_shadow_syslog(LOG_ERR, "get_pam_user: %s",
+                             pam_strerror(pam_handle, pam_rv));
       goto pam_cleanup;
     }
 
     if (pam_authenticate_rv != PAM_SUCCESS) {
-      if (pam_authenticate_rv == PAM_MAXTRIES)
-        hardened_shadow_syslog(LOG_NOTICE, "TOO MANY LOGIN TRIES %s FOR '%s'", hostname, get_failent_user(pam_user));
-      else if (pam_authenticate_rv == PAM_ABORT)
-        hardened_shadow_syslog(LOG_ERR, "PAM_ABORT returned from pam_authenticate()");
-      else
-        hardened_shadow_syslog(LOG_NOTICE, "FAILED LOGIN %s FOR '%s', %s", hostname, get_failent_user(pam_user), pam_strerror(pam_handle, pam_authenticate_rv));
+      if (pam_authenticate_rv == PAM_MAXTRIES) {
+        hardened_shadow_syslog(LOG_NOTICE, "TOO MANY LOGIN TRIES %s FOR '%s'",
+                               hostname, get_failent_user(pam_user));
+      } else if (pam_authenticate_rv == PAM_ABORT) {
+        hardened_shadow_syslog(LOG_ERR,
+                               "PAM_ABORT returned from pam_authenticate()");
+      } else {
+        hardened_shadow_syslog(LOG_NOTICE, "FAILED LOGIN %s FOR '%s', %s",
+                               hostname, get_failent_user(pam_user),
+                               pam_strerror(pam_handle, pam_authenticate_rv));
+      }
 
       puts("\nLogin incorrect.");
       goto pam_cleanup;
@@ -252,24 +273,28 @@ int main(int argc, char **argv) {
     if (pam_rv == PAM_NEW_AUTHTOK_REQD) {
       pam_rv = pam_chauthtok(pam_handle, PAM_CHANGE_EXPIRED_AUTHTOK);
       if (pam_rv != PAM_SUCCESS) {
-        hardened_shadow_syslog(LOG_ERR, "pam_chauthtok: %s", pam_strerror(pam_handle, pam_rv));
+        hardened_shadow_syslog(LOG_ERR, "pam_chauthtok: %s",
+                               pam_strerror(pam_handle, pam_rv));
         goto pam_cleanup;
       }
     } else {
-      hardened_shadow_syslog(LOG_ERR, "pam_acct_mgmt: %s", pam_strerror(pam_handle, pam_rv));
+      hardened_shadow_syslog(LOG_ERR, "pam_acct_mgmt: %s",
+                             pam_strerror(pam_handle, pam_rv));
       goto pam_cleanup;
     }
   }
 
   pam_rv = get_pam_user(pam_handle, &pam_user);
   if (pam_rv != PAM_SUCCESS) {
-    hardened_shadow_syslog(LOG_ERR, "get_pam_user: %s", pam_strerror(pam_handle, pam_rv));
+    hardened_shadow_syslog(LOG_ERR, "get_pam_user: %s",
+                           pam_strerror(pam_handle, pam_rv));
     goto pam_cleanup;
   }
 
   struct passwd *target_pwd = (pam_user) ? getpwnam(pam_user) : NULL;
   if (!target_pwd) {
-    hardened_shadow_syslog(LOG_ERR, "cannot find user %s", get_failent_user(pam_user));
+    hardened_shadow_syslog(LOG_ERR, "cannot find user %s",
+                           get_failent_user(pam_user));
     goto pam_cleanup;
   }
   uid_t target_uid = target_pwd->pw_uid;
@@ -286,25 +311,29 @@ int main(int argc, char **argv) {
   }
 
   if (setgid(target_gid) != 0) {
-    hardened_shadow_syslog(LOG_ERR, "bad group ID `%d' for user `%s': %s", target_gid, pam_user, strerror(errno));
+    hardened_shadow_syslog(LOG_ERR, "bad group ID `%d' for user `%s': %s",
+                           target_gid, pam_user, strerror(errno));
     pam_rv = PAM_ABORT;
     goto pam_cleanup;
   }
   if (initgroups(pam_user, target_gid) != 0) {
-    hardened_shadow_syslog(LOG_ERR, "initgroups failed for user `%s': %s", pam_user, strerror(errno));
+    hardened_shadow_syslog(LOG_ERR, "initgroups failed for user `%s': %s",
+                           pam_user, strerror(errno));
     pam_rv = PAM_ABORT;
     goto pam_cleanup;
   }
 
   pam_rv = pam_setcred(pam_handle, PAM_ESTABLISH_CRED);
   if (pam_rv != PAM_SUCCESS) {
-    hardened_shadow_syslog(LOG_ERR, "pam_setcred: %s", pam_strerror(pam_handle, pam_rv));
+    hardened_shadow_syslog(LOG_ERR, "pam_setcred: %s",
+                           pam_strerror(pam_handle, pam_rv));
     goto pam_cleanup;
   }
 
   pam_rv = pam_open_session(pam_handle, 0);
   if (pam_rv != PAM_SUCCESS) {
-    hardened_shadow_syslog(LOG_ERR, "pam_open_session: %s", pam_strerror(pam_handle, pam_rv));
+    hardened_shadow_syslog(LOG_ERR, "pam_open_session: %s",
+                           pam_strerror(pam_handle, pam_rv));
     goto pam_cred_cleanup;
   }
 
@@ -361,7 +390,8 @@ int main(int argc, char **argv) {
     char *hushlogin_path = NULL;
     if (asprintf(&hushlogin_path, "%s/.hushlogin", target_homedir) < 0)
       err(EXIT_FAILURE, "memory allocation failure");
-    if (putenv((access(hushlogin_path, F_OK) == 0) ? "HUSHLOGIN=TRUE" : "HUSHLOGIN=FALSE") != 0)
+    bool hushlogin = (access(hushlogin_path, F_OK) == 0);
+    if (putenv(hushlogin ? "HUSHLOGIN=TRUE" : "HUSHLOGIN=FALSE") != 0)
       err(EXIT_FAILURE, "putenv");
     free(hushlogin_path);
   }

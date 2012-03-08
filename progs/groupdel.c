@@ -61,11 +61,14 @@ int main(int argc, char **argv) {
     errx(EXIT_FAILURE, "group '%s' does not exist", group_name);
   gid_t gid = grp->gr_gid;
 
+  /* Make sure we are not removing any user's primary group. */
   setpwent();
   struct passwd *pwd = NULL;
   while ((pwd = getpwent())) {
-    if (pwd->pw_gid == gid)
-      errx(EXIT_FAILURE, "cannot remove the primary group of user '%s'", pwd->pw_name);
+    if (pwd->pw_gid == gid) {
+      errx(EXIT_FAILURE, "cannot remove the primary group of user '%s'",
+           pwd->pw_name);
+    }
   }
   endpwent();
 

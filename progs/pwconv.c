@@ -60,7 +60,8 @@ int main(int argc, char **argv UNUSED) {
     errx(EXIT_FAILURE, "failed to retrieve hardened-shadow GID");
 
   intmax_t system_min, system_max;
-  if (!hardened_shadow_config_get_range("SYSTEM_UID_RANGE", &system_min, &system_max))
+  if (!hardened_shadow_config_get_range("SYSTEM_UID_RANGE",
+                                        &system_min, &system_max))
     errx(EXIT_FAILURE, "failed to retrieve SYSTEM_UID_RANGE");
 
   if (mkdir("/etc/hardened-shadow", 0755) != 0)

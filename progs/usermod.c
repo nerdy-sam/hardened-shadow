@@ -109,7 +109,8 @@ static void parse_args(int argc, char **argv) {
     {"unlock", no_argument, NULL, 'U'},
     {NULL, 0, NULL, '\0'}
   };
-  while ((c = getopt_long (argc, argv, "ac:d:e:f:g:G:hl:Lmos:u:U", long_options, NULL)) != -1) {
+  while ((c = getopt_long(argc, argv, "ac:d:e:f:g:G:hl:Lmos:u:U",
+                          long_options, NULL)) != -1) {
     switch (c) {
       case 'a':
         flag_append = true;
@@ -139,8 +140,10 @@ static void parse_args(int argc, char **argv) {
         break;
       case 'G':
         flag_groups = optarg;
-        if (!hardened_shadow_parse_group_list(flag_groups, &user_groups, &user_ngroups))
+        if (!hardened_shadow_parse_group_list(flag_groups,
+                                              &user_groups, &user_ngroups)) {
           errx(EXIT_FAILURE, "invalid group list '%s'", flag_groups);
+        }
         break;
       case 'l':
         if (!hardened_shadow_is_valid_user_name(optarg))
@@ -201,30 +204,37 @@ static void parse_args(int argc, char **argv) {
     errx(EXIT_FAILURE, "UID '%ju' already exists", (uintmax_t)flag_uid);
 }
 
-static bool move_home(const struct passwd *original_pwd, const struct passwd *pwd) {
+static bool move_home(const struct passwd *original_pwd,
+                      const struct passwd *pwd) {
   struct stat sb;
   if (stat(original_pwd->pw_dir, &sb) != 0) {
     warn("stat");
     return false;
   }
 
+  /* Especially avoid moving special files here (e.g. files in /dev). */
   if (!S_ISDIR(sb.st_mode)) {
     warnx("%s is not a directory", original_pwd->pw_dir);
     return false;
   }
 
+  /* It is an error if the target new directory already exists. */
   if (access(pwd->pw_dir, F_OK) == 0) {
     warnx("directory %s exists", pwd->pw_dir);
     return false;
   }
 
+  /* Rename is the simplest way to deal with the move,
+   * and also safest (hard to make mistakes). */
   if (rename(original_pwd->pw_dir, pwd->pw_dir) == 0)
     return true;
-
   if (errno != EXDEV) {
     warn("rename");
     return false;
   }
+
+  /* Rename failed with EXDEV error, we have to copy contents.
+   * The copy is more error-prone and not atomic. */
 
   if (mkdir(pwd->pw_dir, sb.st_mode & (~S_IFMT)) != 0) {
     warn("mkdir");
@@ -237,7 +247,8 @@ static bool move_home(const struct passwd *original_pwd, const struct passwd *pw
     return false;
   }
 
-  if (!hardened_shadow_copy_dir_contents(original_pwd->pw_dir, pwd->pw_dir, pwd->pw_uid, pwd->pw_gid)) {
+  if (!hardened_shadow_copy_dir_contents(original_pwd->pw_dir, pwd->pw_dir,
+                                         pwd->pw_uid, pwd->pw_gid)) {
     warnx("hardened_shadow_copy_dir_contents failed");
     hardened_shadow_remove_dir_contents(pwd->pw_dir);
     rmdir(pwd->pw_dir);
@@ -258,7 +269,8 @@ static bool move_home(const struct passwd *original_pwd, const struct passwd *pw
 }
 
 static bool update_passwd(void) {
-  char *shell_proxy = realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
+  char *shell_proxy =
+      realpath(HARDENED_SHADOW_ROOT_PREFIX "/bin/shell_proxy", NULL);
   if (!shell_proxy)
     errx(EXIT_FAILURE, "memory allocation failure");
 
@@ -283,9 +295,12 @@ static bool update_passwd(void) {
     pwd->pw_name = flag_login;
 
   if (flag_shell) {
+    /* Use shell_proxy if possible, so that the user can choose
+     * and change his preferred shell. */
     if (hardened_shadow_is_valid_login_shell(flag_shell)) {
       pwd->pw_shell = shell_proxy;
-      if (!hardened_shadow_replace_user_file(user_name, pwd->pw_uid, flag_shell, "shell")) {
+      if (!hardened_shadow_replace_user_file(user_name, pwd->pw_uid,
+                                             flag_shell, "shell")) {
         result = false;
         goto out;
       }
@@ -306,8 +321,10 @@ static bool update_shadow(uid_t uid) {
   const char *effective_user_name = user_name;
 
   if (flag_login) {
-    if (renameat(hardened_shadow_fd(), user_name, hardened_shadow_fd(), flag_login) != 0)
+    if (renameat(hardened_shadow_fd(), user_name,
+                 hardened_shadow_fd(), flag_login) != 0) {
       return false;
+    }
 
     effective_user_name = flag_login;
   }
@@ -329,8 +346,10 @@ static bool update_shadow(uid_t uid) {
 
     char *shadow_contents = NULL;
     if (hardened_shadow_asprintf_shadow(&shadow_contents, spw)) {
-      if (!hardened_shadow_replace_user_file(effective_user_name, uid, shadow_contents, "shadow"))
+      if (!hardened_shadow_replace_user_file(effective_user_name, uid,
+                                             shadow_contents, "shadow")) {
         result = false;
+      }
 
       free(shadow_contents);
     } else {
@@ -347,7 +366,8 @@ static bool update_shadow(uid_t uid) {
     if (!hardened_shadow_asprintf_shadow(&shadow_contents, spw))
       return false;
 
-    bool result = hardened_shadow_replace_user_file(effective_user_name, uid, shadow_contents, "shadow");
+    bool result = hardened_shadow_replace_user_file(effective_user_name, uid,
+                                                    shadow_contents, "shadow");
     free(shadow_contents);
     if (!result)
       return false;
@@ -362,7 +382,8 @@ static bool update_shadow(uid_t uid) {
   if (!hardened_shadow_asprintf_aging(&aging_contents, spw))
     return false;
 
-  bool result = hardened_shadow_replace_user_file(effective_user_name, uid, aging_contents, "aging");
+  bool result = hardened_shadow_replace_user_file(effective_user_name, uid,
+                                                  aging_contents, "aging");
   free(aging_contents);
   return result;
 }
@@ -377,8 +398,12 @@ static bool update_group(void) {
     effective_user_name = flag_login;
   }
 
-  if (flag_groups && !hardened_shadow_update_group_add_user(effective_user_name, user_groups, user_ngroups, flag_append))
+  if (flag_groups &&
+      !hardened_shadow_update_group_add_user(effective_user_name,
+                                             user_groups, user_ngroups,
+                                             flag_append)) {
     return false;
+  }
 
   hardened_shadow_flush_nscd("group");
   return true;

@@ -157,9 +157,15 @@ static bool edit_file(const char *filename) {
       goto out;
     }
 
-    bool consistency_check = (flag_passwd) ? hardened_shadow_pwck_passwd(true, true) : hardened_shadow_grpck(true);
-    if (consistency_check || hardened_shadow_interactive_confirm("save ignoring errors?"))
+    bool consistency_check;
+    if (flag_passwd)
+      consistency_check = hardened_shadow_pwck_passwd(true, true);
+    else
+      consistency_check = hardened_shadow_grpck(true);
+    if (consistency_check ||
+        hardened_shadow_interactive_confirm("save ignoring errors?")) {
       break;
+    }
   }
 
   if (rename(tmp_path, filename) != 0) {

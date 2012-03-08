@@ -42,24 +42,31 @@ int main(UNUSED int argc, char **argv) {
   struct passwd *pwd = getpwuid(getuid());
   if (!pwd)
     exit(EXIT_FAILURE);
+
+  /* Get the target shell. */
   int user_fd = hardened_shadow_open_user_directory(pwd->pw_name);
   if (user_fd < 0)
     exit(EXIT_FAILURE);
-  int shell_fd = hardened_shadow_open_user_file(user_fd, "shell", O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW);
+  int shell_fd = hardened_shadow_open_user_file(
+      user_fd, "shell", O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW);
   if (shell_fd < 0)
     exit(EXIT_FAILURE);
   char *shell_contents = NULL;
   if (!hardened_shadow_read_contents(shell_fd, &shell_contents, NULL))
     exit(EXIT_FAILURE);
+
+  /* Make sure we do not pass unnecessary file descriptors to the child. */
   if (!hardened_shadow_closefrom(STDERR_FILENO + 1))
     exit(EXIT_FAILURE);
 
+  /* Simulate as closely as possible launching of the target shell,
+   * including environment and argv contents. */
   if (setenv("SHELL", shell_contents, 1) != 0)
     exit(EXIT_FAILURE);
-
   if (!argv[0])
     exit(EXIT_FAILURE);
   if (argv[0][0] == '-') {
+    /* This is important to handle login shells correctly, see login.c. */
     if (asprintf(&argv[0], "-%s", basename(shell_contents)) < 0)
       exit(EXIT_FAILURE);
   } else {

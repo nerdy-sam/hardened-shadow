@@ -41,7 +41,10 @@ int main(void) {
   const char *login = getlogin();
 
   hardened_shadow_openlog("nologin");
-  hardened_shadow_syslog(LOG_CRIT, "Attempted login by %s on %s", login ? login : "UNKNOWN", tty ? tty : "UNKNOWN");
+  hardened_shadow_syslog(LOG_CRIT,
+                         "Attempted login by %s on %s",
+                         login ? login : "UNKNOWN",
+                         tty ? tty : "UNKNOWN");
 
   puts("This account is currently not available.");
 

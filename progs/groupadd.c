@@ -154,7 +154,8 @@ int main(int argc, char **argv) {
   if (!hardened_shadow_replace_group(group_name, &grp))
     errx(EXIT_FAILURE, "Failed to update /etc/group.");
 
-  hardened_shadow_syslog(LOG_INFO, "new group: name=%s, GID=%ju", group_name, (uintmax_t)flag_gid);
+  hardened_shadow_syslog(LOG_INFO, "new group: name=%s, GID=%ju",
+                         group_name, (uintmax_t)flag_gid);
 
   hardened_shadow_flush_nscd("group");
 

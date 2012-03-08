@@ -90,7 +90,8 @@ static void parse_args(int argc, char **argv) {
   };
 
   int c;
-  while ((c = getopt_long (argc, argv, "d:E:hI:lm:M:W:", long_options, NULL)) != -1) {
+  while ((c = getopt_long(
+             argc, argv, "d:E:hI:lm:M:W:", long_options, NULL)) != -1) {
     switch (c) {
       case 'd':
         if (!hardened_shadow_getday(optarg, &flag_lastday))
@@ -203,9 +204,12 @@ static bool handle_list(const struct spwd *spw) {
   else
     print_date(spw->sp_expire * 60 * 60 * 24);
 
-  printf("Minimum number of days between password change\t\t: %ld\n", spw->sp_min);
-  printf("Maximum number of days between password change\t\t: %ld\n", spw->sp_max);
-  printf("Number of days of warning before password expires\t: %ld\n", spw->sp_warn);
+  printf("Minimum number of days between password change\t\t: %ld\n",
+         spw->sp_min);
+  printf("Maximum number of days between password change\t\t: %ld\n",
+         spw->sp_max);
+  printf("Number of days of warning before password expires\t: %ld\n",
+         spw->sp_warn);
 
   return true;
 }
@@ -239,12 +243,14 @@ static bool update_shadow(struct spwd *spw) {
     goto out;
   }
 
-  if (!hardened_shadow_replace_user_file(user_name, user_uid, shadow_contents, "shadow")) {
+  if (!hardened_shadow_replace_user_file(user_name, user_uid,
+                                         shadow_contents, "shadow")) {
     result = false;
     goto out;
   }
 
-  if (!hardened_shadow_replace_user_file(user_name, user_uid, aging_contents, "aging")) {
+  if (!hardened_shadow_replace_user_file(user_name, user_uid,
+                                         aging_contents, "aging")) {
     result = false;
     goto out;
   }
@@ -255,7 +261,11 @@ out:
   return result;
 }
 
-static bool prompt_integer(const char *prompt, intmax_t default_value, intmax_t minvalue, intmax_t maxvalue, intmax_t *prompt_result) {
+static bool prompt_integer(const char *prompt,
+                           intmax_t default_value,
+                           intmax_t minvalue,
+                           intmax_t maxvalue,
+                           intmax_t *prompt_result) {
   char *default_value_str = NULL;
   char *prompt_result_str = NULL;
 
@@ -267,14 +277,22 @@ static bool prompt_integer(const char *prompt, intmax_t default_value, intmax_t 
     goto out;
   }
 
-  if (!hardened_shadow_interactive_prompt(prompt, default_value_str, &prompt_result_str)) {
+  if (!hardened_shadow_interactive_prompt(prompt,
+                                          default_value_str,
+                                          &prompt_result_str)) {
     warnx("Failed to get the response");
     result = false;
     goto out;
   }
 
-  if (!hardened_shadow_strtonum(prompt_result_str, minvalue, maxvalue, prompt_result)) {
-    warnx("'%s' is not a valid integer from range (%jd) - (%jd)", prompt_result_str, minvalue, maxvalue);
+  if (!hardened_shadow_strtonum(prompt_result_str,
+                                minvalue,
+                                maxvalue,
+                                prompt_result)) {
+    warnx("'%s' is not a valid integer from range (%jd) - (%jd)",
+          prompt_result_str,
+          minvalue,
+          maxvalue);
     result = false;
     goto out;
   }
@@ -285,19 +303,24 @@ out:
   return result;
 }
 
-static bool prompt_date(const char *prompt, intmax_t default_value, intmax_t *prompt_result) {
+static bool prompt_date(const char *prompt,
+                        intmax_t default_value,
+                        intmax_t *prompt_result) {
   char *default_value_str = NULL;
   char *prompt_result_str = NULL;
 
   bool result = true;
 
-  if (hardened_shadow_asprintf_date(&default_value_str, default_value * 60 * 60 * 24) < 0) {
+  if (hardened_shadow_asprintf_date(&default_value_str,
+                                    default_value * 60 * 60 * 24) < 0) {
     warnx("hardened_shadow_asprintf_date failed");
     result = false;
     goto out;
   }
 
-  if (!hardened_shadow_interactive_prompt(prompt, default_value_str, &prompt_result_str)) {
+  if (!hardened_shadow_interactive_prompt(prompt,
+                                          default_value_str,
+                                          &prompt_result_str)) {
     warnx("Failed to get the response");
     result = false;
     goto out;
@@ -320,23 +343,35 @@ static bool interactive_prompt(const struct spwd *spw) {
   printf("Changing the aging information for %s\n", user_name);
   puts("Enter the new value, or press ENTER for the default\n");
 
-  if (!prompt_integer("Minimum Password Age", spw->sp_min, -1, LONG_MAX, &flag_mindays))
+  if (!prompt_integer("Minimum Password Age", spw->sp_min,
+                      -1, LONG_MAX, &flag_mindays)) {
     return false;
+  }
 
-  if (!prompt_integer("Maximum Password Age", spw->sp_max, -1, LONG_MAX, &flag_maxdays))
+  if (!prompt_integer("Maximum Password Age", spw->sp_max,
+                      -1, LONG_MAX, &flag_maxdays)) {
     return false;
+  }
 
-  if (!prompt_date("Last Password Change (YYYY-MM-DD)", spw->sp_lstchg, &flag_lastday))
+  if (!prompt_date("Last Password Change (YYYY-MM-DD)", spw->sp_lstchg,
+                   &flag_lastday)) {
     return false;
+  }
 
-  if (!prompt_integer("Password Expiration Warning", spw->sp_warn, -1, LONG_MAX, &flag_warndays))
+  if (!prompt_integer("Password Expiration Warning", spw->sp_warn,
+                      -1, LONG_MAX, &flag_warndays)) {
     return false;
+  }
 
-  if (!prompt_integer("Password Inactive", spw->sp_inact, -1, LONG_MAX, &flag_inactive))
+  if (!prompt_integer("Password Inactive", spw->sp_inact,
+                      -1, LONG_MAX, &flag_inactive)) {
     return false;
+  }
 
-  if (!prompt_date("Account Expiration Date (YYYY-MM-DD)", spw->sp_expire, &flag_expiredate))
+  if (!prompt_date("Account Expiration Date (YYYY-MM-DD)",
+                   spw->sp_expire, &flag_expiredate)) {
     return false;
+  }
 
   return true;
 }
