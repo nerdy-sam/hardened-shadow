@@ -73,7 +73,6 @@ static inline uintmax_t uintmin(uintmax_t a, uintmax_t b) {
   return (a < b) ? a : b;
 }
 
-bool hardened_shadow_read_config(void);
 bool hardened_shadow_config_get_bool(const char *key, bool *result);
 bool hardened_shadow_config_get_integer(const char *key, intmax_t *result);
 bool hardened_shadow_config_get_mode(const char *key, mode_t *result);

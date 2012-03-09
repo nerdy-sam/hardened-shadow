@@ -842,9 +842,6 @@ static void create_account(void) {
 }
 
 int main(int argc, char **argv) {
-  if (!hardened_shadow_read_config())
-    errx(EXIT_FAILURE, "failed to read config");
-
   hardened_shadow_openlog("useradd");
 
   if (lckpwdf() != 0)

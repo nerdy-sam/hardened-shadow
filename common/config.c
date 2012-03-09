@@ -108,17 +108,22 @@ static bool validate_config_entries(void) {
   return valid;
 }
 
-bool hardened_shadow_read_config(void) {
+static bool config_loaded = false;
+
+static bool load_config(void) {
+  /* Only load config once. */
+  if (config_loaded)
+    return true;
+  config_loaded = true;
+
   if (!validate_config_entries()) {
     warnx("internal error: default config is invalid");
     return false;
   }
 
   FILE *file = fopen("/etc/hardened-shadow.conf", "re");
-  if (!file) {
-    warn("failed to open configuration file");
-    return false;
-  }
+  if (!file)
+    return true;
 
   bool result = true;
 
@@ -174,6 +179,9 @@ out:
 }
 
 bool hardened_shadow_config_get_bool(const char *key, bool *result) {
+  if (!load_config())
+    return false;
+
   for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(config_entries); i++) {
     if (strcmp(key, config_entries[i].key) != 0)
       continue;
@@ -187,6 +195,9 @@ bool hardened_shadow_config_get_bool(const char *key, bool *result) {
 }
 
 bool hardened_shadow_config_get_integer(const char *key, intmax_t *result) {
+  if (!load_config())
+    return false;
+
   for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(config_entries); i++) {
     if (strcmp(key, config_entries[i].key) != 0)
       continue;
@@ -203,6 +214,9 @@ bool hardened_shadow_config_get_integer(const char *key, intmax_t *result) {
 }
 
 bool hardened_shadow_config_get_mode(const char *key, mode_t *result) {
+  if (!load_config())
+    return false;
+
   for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(config_entries); i++) {
     if (strcmp(key, config_entries[i].key) != 0)
       continue;
@@ -218,6 +232,9 @@ bool hardened_shadow_config_get_mode(const char *key, mode_t *result) {
 }
 
 bool hardened_shadow_config_get_path(const char *key, const char **result) {
+  if (!load_config())
+    return false;
+
   for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(config_entries); i++) {
     if (strcmp(key, config_entries[i].key) != 0)
       continue;
@@ -234,6 +251,9 @@ bool hardened_shadow_config_get_path(const char *key, const char **result) {
 bool hardened_shadow_config_get_range(const char *key,
                                       intmax_t *minresult,
                                       intmax_t *maxresult) {
+  if (!load_config())
+    return false;
+
   for (size_t i = 0; i < HARDENED_SHADOW_ARRAYSIZE(config_entries); i++) {
     if (strcmp(key, config_entries[i].key) != 0)
       continue;
