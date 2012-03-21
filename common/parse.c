@@ -36,6 +36,20 @@
 #include <unistd.h>
 #include <utmp.h>
 
+/* Note: the name must never contain any of the following banned characters:
+ *  ':' (field separator)
+ *  ',' (group member separator; but can be used e.g. in GECOS)
+ *  '\n'
+ *  '\t'
+ *  '~' (shell expansion; shell has more metacharacters though)
+ *
+ * The name must not begin with any of the following:
+ *  '-' (special meaning for NIS, also looks like a command line option)
+ *  '+' (special meaning for NIS)
+ *
+ * See http://lists.alioth.debian.org/pipermail/pkg-shadow-devel/2011-December/008988.html
+ * for reference.
+ */
 static const char VALID_NAME_FIRST_CHARACTERS[] = "abcdefghijklmnopqrstuvwxyz_";
 static const char VALID_NAME_CHARACTERS[]       = "abcdefghijklmnopqrstuvwxyz_-0123456789";
 static const char VALID_FIELD_CHARACTERS[]      = "abcdefghijklmnopqrstuvwxyz_-0123456789/., ";
