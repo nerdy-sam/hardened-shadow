@@ -138,7 +138,7 @@ AC_CHECK_FUNCS([ \
 	strspn])
 
 AC_ARG_ENABLE([werror], [AS_HELP_STRING([--enable-werror], [make compiler warnings into errors])])
-AS_IF([test x$with_enable_werror = xyes], [CC_CHECK_CFLAGS_APPEND([-Werror])])
+AS_IF([test x$enable_werror = xyes], [CC_CHECK_CFLAGS_APPEND([-Werror])])
 
 AC_ARG_ENABLE([generate-man], [AS_HELP_STRING([--enable-generate-man], [generate man pages from xml files])])
 if test "x$enable_generate_man" = "xyes"; then

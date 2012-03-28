@@ -63,8 +63,7 @@ static void print_current_groups(void) {
   if (ngroups < 0)
     err(EXIT_FAILURE, "getgroups failed");
 
-  size_t i;
-  for (i = 0; i < ngroups; i++) {
+  for (int i = 0; i < ngroups; i++) {
     struct group *gr = getgrgid(groups[i]);
     if (gr)
       printf("%s ", gr->gr_name);
