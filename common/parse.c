@@ -51,8 +51,8 @@
  * for reference.
  */
 static const char VALID_NAME_FIRST_CHARACTERS[] = "abcdefghijklmnopqrstuvwxyz_";
-static const char VALID_NAME_CHARACTERS[]       = "abcdefghijklmnopqrstuvwxyz_-0123456789";
-static const char VALID_FIELD_CHARACTERS[]      = "abcdefghijklmnopqrstuvwxyz_-0123456789/., ";
+static const char VALID_NAME_CHARACTERS[]       = "abcdefghijklmnopqrstuvwxyz_-+0123456789";
+static const char VALID_FIELD_CHARACTERS[]      = "abcdefghijklmnopqrstuvwxyz_-+0123456789/., ";
 
 static bool is_valid_name(const char *name) {
   size_t length = strlen(name);
