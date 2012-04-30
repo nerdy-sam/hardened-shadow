@@ -127,6 +127,15 @@ static bool pwck_shadow(void) {
 
   bool result = true;
 
+  if (!pwck_ownership_and_permissions(hardened_shadow_fd(),
+                                      0,
+                                      hardened_shadow_gid,
+                                      0755,
+                                      "hardened-shadow root directory",
+                                      "root")) {
+    result = false;
+  }
+
   struct dirent *ent;
   while ((ent = readdir(hardened_shadow_dir))) {
     if (strcmp(ent->d_name, ".") == 0 ||
