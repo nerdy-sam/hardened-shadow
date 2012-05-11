@@ -57,7 +57,7 @@ struct config_entry config_entries[] = {
   { "PASS_MAX_DAYS", "99999", INTEGER, 0, LONG_MAX },
   { "PASS_WARN_AGE", "7", INTEGER, 0, LONG_MAX },
   { "HOME_DIRECTORY_MODE", "0755", MODE, -1, -1 },
-  { "MAIL_DIRECTORY", "/var/mail", PATH, -1, -1 },
+  { "MAIL_DIRECTORY", "/var/spool/mail", PATH, -1, -1 },
   { "USERDEL_COMMAND", "/bin/true", PATH, -1, -1 },
   { "USER_UID_RANGE", "1000-60000", RANGE, 0, INTMAX_MAX },
   { "SYSTEM_UID_RANGE", "101-999", RANGE, 0, INTMAX_MAX },
