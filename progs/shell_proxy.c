@@ -67,7 +67,7 @@ int main(UNUSED int argc, char **argv) {
     if (asprintf(&argv[0], "-%s", basename(shell_contents)) < 0)
       exit(EXIT_FAILURE);
   } else {
-    argv[0] = shell_contents;
+    argv[0] = basename(shell_contents);
   }
 
   execv(shell_contents, argv);
