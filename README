@@ -1,0 +1,58 @@
+hardened-shadow is an alternative implementation
+of user-management utilities: login, su, passwd, useradd,
+and so on.
+
+It has been designed to be simple and secure.
+
+===============================================================================
+
+homepage
+  http://code.google.com/p/hardened-shadow/
+
+bug tracker
+  http://code.google.com/p/hardened-shadow/issues/list
+
+git web interface
+  http://code.google.com/p/hardened-shadow/source/browse/
+
+mailing lists
+  http://groups.google.com/group/hardened-shadow-dev
+  http://groups.google.com/group/hardened-shadow-users
+
+===============================================================================
+
+Build prerequisites:
+
+autoconf, automake, libtool, libxslt, make, Linux-PAM,
+DocBook DTD 4.5 and XSL Stylesheet
+
+===============================================================================
+
+How to compile from git:
+
+git clone https://code.google.com/p/hardened-shadow/
+cd hardened-shadow/
+libtoolize
+autoreconf -i
+./configure --enable-generate-man
+make
+
+===============================================================================
+
+How to compile from tarball:
+
+./configure
+make
+
+===============================================================================
+
+How to install:
+
+1. Make sure wheel and hardened-shadow groups exist.
+2. Run pwck and fix as many errors as possible.
+3. Run "make install" as root
+4. Run "pwconv" as root
+5. Replace "shadow: compat" line in /etc/nsswitch.conf with "shadow: hardened_shadow"
+6. Replace "pam_unix.so" with "pam_hardened_shadow.so" in /etc/pam.d
+7. Make sure "pam_hardened_shadow.so" for passwd has parameter "prefix=$6$"
+8. Add /bin/shell_proxy to /etc/shells

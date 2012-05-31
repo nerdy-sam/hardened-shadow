@@ -172,7 +172,7 @@ man_MANS = \
 	man/usermod.8 \
 	man/vipw.8
 
-EXTRA_DIST = $(man_MANS) $(man_XMANS)
+EXTRA_DIST = $(man_MANS) $(man_XMANS) README
 
 if GENERATE_MAN
 CLEANFILES = $(man_MANS)
