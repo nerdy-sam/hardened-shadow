@@ -194,10 +194,10 @@ out:
 static char *create_password_hash(pam_handle_t *pamh, const char *password, const char *prefix) {
   char salt[64]; /* contains max 16 bytes of salt + algo id */
 
-  if (strlen(prefix) > sizeof(salt) - 8)
+  if (strlen(prefix) > sizeof(salt) - 16)
     return NULL;
   char *sp = stpcpy(salt, prefix);
-  if (!crypt_make_salt(sp, 8))
+  if (!crypt_make_salt(sp, 16))
     return NULL;
   sp = crypt(password, salt);
   if (!hardened_shadow_starts_with(sp, prefix)) {
