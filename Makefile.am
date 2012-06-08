@@ -61,6 +61,7 @@ libnss_hardened_shadow_la_LDFLAGS = \
 	-version-info 2 --version-script=$(srcdir)nsswitch/hardened_shadow.map
 
 execrootbin_PROGRAMS = \
+	progs/get_shell \
 	progs/groups \
 	progs/login \
 	progs/passwd \
@@ -113,6 +114,8 @@ pam_pam_hardened_shadow_la_SOURCES = \
 install-exec-hook:
 	chown :wheel $(DESTDIR)$(execrootbindir)/su
 	chmod 4710 $(DESTDIR)$(execrootbindir)/su
+	chown :$(hardened_shadow_group) $(DESTDIR)$(execrootbindir)/get_shell
+	chmod 2711 $(DESTDIR)$(execrootbindir)/get_shell
 	chown :$(hardened_shadow_group) $(DESTDIR)$(bindir)/chage
 	chmod 2711 $(DESTDIR)$(bindir)/chage
 	chown :$(hardened_shadow_group) $(DESTDIR)$(bindir)/chsh

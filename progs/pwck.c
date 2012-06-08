@@ -130,7 +130,7 @@ static bool pwck_shadow(void) {
   if (!pwck_ownership_and_permissions(hardened_shadow_fd(),
                                       0,
                                       hardened_shadow_gid,
-                                      0755,
+                                      0750,
                                       "hardened-shadow root directory",
                                       "root")) {
     result = false;

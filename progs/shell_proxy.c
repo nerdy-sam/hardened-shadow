@@ -31,25 +31,53 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "hardened-shadow.h"
 
 int main(UNUSED int argc, char **argv) {
-  struct passwd *pwd = getpwuid(getuid());
-  if (!pwd)
+  /* Launch an even smaller executable to read the shell path
+   * from /etc/hardened-shadow (regular users can't access it).
+   * Use separate executable to minimize risk of launching the shell
+   * with elevated privileges. */
+
+  int fds[2];
+  if (pipe(fds) != 0)
     exit(EXIT_FAILURE);
 
-  /* Get the target shell. */
-  int user_fd = hardened_shadow_open_user_directory(pwd->pw_name);
-  if (user_fd < 0)
+  pid_t fork_rv = fork();
+  if (fork_rv == -1)
     exit(EXIT_FAILURE);
-  int shell_fd = hardened_shadow_open_user_file(
-      user_fd, "shell", O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NOFOLLOW);
-  if (shell_fd < 0)
-    exit(EXIT_FAILURE);
+
+  if (fork_rv == 0) {
+    /* Child. */
+
+    close(fds[0]);  /* Close unused read end. */
+
+    /* Write standard output to the pipe. */
+    if (dup2(fds[1], STDOUT_FILENO) == -1)
+      _exit(EXIT_FAILURE);
+
+    execl(HARDENED_SHADOW_ROOT_PREFIX "/bin/get_shell", "get_shell", NULL);
+    _exit(EXIT_FAILURE);
+  }
+
+  /* Parent. */
+
+  close(fds[1]);  /* Close unused write end. */
+
   char *shell_contents = NULL;
-  if (!hardened_shadow_read_contents(shell_fd, &shell_contents, NULL))
+  bool result = hardened_shadow_read_contents(fds[0], &shell_contents, NULL);
+
+  int status = -1;
+  if (waitpid(fork_rv, &status, 0) != fork_rv)
+    exit(EXIT_FAILURE);
+
+  if (!WIFEXITED(status) || WEXITSTATUS(status) != EXIT_SUCCESS)
+    exit(EXIT_FAILURE);
+
+  if (!result)
     exit(EXIT_FAILURE);
 
   /* Make sure we do not pass unnecessary file descriptors to the child. */
