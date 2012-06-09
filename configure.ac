@@ -24,7 +24,7 @@
 
 AC_PREREQ([2.67])
 AC_INIT([hardened-shadow],
-	[0.9.1],
+	[0.9.2],
 	[http://code.google.com/p/hardened-shadow/issues],
 	[],
 	[http://code.google.com/p/hardened-shadow])
