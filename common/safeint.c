@@ -28,11 +28,11 @@
 #include "hardened-shadow.h"
 
 bool hardened_shadow_ucast_ok(intmax_t a, uintmax_t max) {
-  return a > 0 && (uintmax_t)a < max;
+  return a >= 0 && (uintmax_t)a <= max;
 }
 
 bool hardened_shadow_scast_ok(uintmax_t a, intmax_t max) {
-  return a < (uintmax_t)max;
+  return a <= (uintmax_t)max;
 }
 
 bool hardened_shadow_uadd_ok(uintmax_t a, uintmax_t b, uintmax_t max) {
